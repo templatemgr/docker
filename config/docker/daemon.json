@@ -4,5 +4,5 @@
   "log-level": "error",
   "experimental": true,
   "pidfile": "/tmp/docker.pid",
-  "insecure-registries": ["REPLACE_DOCKER_REGISTRIES"],
+  "insecure-registries": ["REPLACE_DOCKER_REGISTRIES"]
 }
