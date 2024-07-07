@@ -196,10 +196,11 @@ __update_conf_files() {
   # define actions
   [ -n "$DOCKER_HUB_TOKEN" ] || DOCKER_HUB_TOKEN="INVALID_TOKEN"
   [ -n "$REGISTERY" ] && for reg in $REGISTERY; do registry+="\"$registry\" "; done
-  registry="$(printf '%s\n' "$registry" | tr ' ' '\n' | sort -V | grep -v '^$' | tr '\n' ',' | sed 's|,$||g' | grep '^' || echo "localhost")"
+  registry="$(printf '%s\n' "$registry" | tr ' ' '\n' | sort -V | grep -v '^$' | tr '\n' ',' | sed 's|,$||g' | grep '^' || false)"
+  [ -n "$registry" ] || registry="localhost"
   # replace variables
-  sed -i 's|"REPLACE_DOCKER_REGISTRIES"|'$registry'|g' "$ETC_DIR/daemon.json"
-  sed -i 's|"REPLACE_DOCKER_REGISTRIES"|'$registry'|g' "$CONF_DIR/daemon.json"
+  [ -f "$ETC_DIR/daemon.json" ] && sed -i 's|"REPLACE_DOCKER_REGISTRIES"|'$registry'|g' "$ETC_DIR/daemon.json"
+  [ -f "$CONF_DIR/daemon.json" ] && sed -i 's|"REPLACE_DOCKER_REGISTRIES"|'$registry'|g' "$CONF_DIR/daemon.json"
   # replace variables recursively
   #  __find_replace "" "" "$CONF_DIR"
 
