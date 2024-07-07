@@ -306,7 +306,7 @@ EOF
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # script to start server
 __run_start_script() {
-  [ "$DEBUGGER" = "on" ] && echo "Enabling debugging" && set -o pipefail -x$DEBUGGER_OPTIONS || set -o pipefail
+  [ "$DEBUGGER" = "on" ] && set -o pipefail -x$DEBUGGER_OPTIONS || set -o pipefail
   local runExitCode=0
   local workdir="$(eval echo "${WORK_DIR:-}")"                   # expand variables
   local cmd="$(eval echo "${EXEC_CMD_BIN:-}")"                   # expand variables
