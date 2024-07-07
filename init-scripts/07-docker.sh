@@ -125,10 +125,9 @@ SERVICE_UID="0" # set the user id
 SERVICE_GID="0" # set the group id
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # execute command variables - keep single quotes variables will be expanded later
-EXEC_CMD_BIN='dockerd'                                                          # command to execute
-EXEC_CMD_ARGS='-H tcp://0.0.0.0:$SERVICE_PORT -H unix:///var/run/docker.sock '  # command arguments
-EXEC_CMD_ARGS+='-H unix:///tmp/docker.sock --config-file $ETC_DIR/daemon.json ' # command arguments
-EXEC_PRE_SCRIPT=''                                                              # execute script before
+EXEC_CMD_BIN='dockerd'                                                                                                                      # command to execute
+EXEC_CMD_ARGS='-H tcp://0.0.0.0:$SERVICE_PORT -H unix:///var/run/docker.sock -H unix:///tmp/docker.sock --config-file $ETC_DIR/daemon.json' # command arguments
+EXEC_PRE_SCRIPT=''                                                                                                                          # execute script before
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Is this service a web server
 IS_WEB_SERVER="no"
@@ -195,7 +194,7 @@ __update_conf_files() {
 
   # define actions
   [ -n "$DOCKER_HUB_TOKEN" ] || DOCKER_HUB_TOKEN="INVALID_TOKEN"
-  [ -n "$REGISTERY" ] && for reg in $REGISTERY; do registry+="\"$registry\" "; done && create_registry="$(printf '%s\n' "$registry" | tr ' ' '\n' | sort -V | grep -v '^$' | tr '\n' ',' | sed 's|,$||g' | grep '^' || false)"
+  [ -n "$REGISTERY" ] && for reg in ${REGISTERY//,/ }; do registry+="\"$registry\" "; done && create_registry="$(printf '%s\n' "$registry" | tr ' ' '\n' | sort -V | grep -v '^$' | tr '\n' ',' | sed 's|,$||g' | grep '^' || false)"
   [ -n "$create_registry" ] && registry="$create_registry" || registry="localhost"
   # replace variables
   [ -f "$ETC_DIR/daemon.json" ] && sed -i 's|"REPLACE_DOCKER_REGISTRIES"|'$registry'|g' "$ETC_DIR/daemon.json"

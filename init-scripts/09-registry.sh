@@ -79,8 +79,8 @@ DATABASE_DIR="${DATABASE_DIR_DOCKER_REGISTRY:-/data/db/sqlite}"
 WWW_ROOT_DIR="/usr/share/httpd/default"
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Default predefined variables
-DATA_DIR="/data/docker-registry"   # set data directory
-CONF_DIR="/config/docker-registry" # set config directory
+DATA_DIR="/data/registry"   # set data directory
+CONF_DIR="/config/registry" # set config directory
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # set the containers etc directory
 ETC_DIR="/etc/docker-registry"
@@ -105,14 +105,14 @@ user_name="${DOCKER_REGISTRY_USER_NAME:-}"      # normal user name
 user_pass="${DOCKER_REGISTRY_USER_PASS_WORD:-}" # normal user password
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # port which service is listening on
-SERVICE_PORT=""
+SERVICE_PORT="5001"
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # User to use to launch service - IE: postgres
 RUNAS_USER="root" # normally root
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # User and group in which the service switches to - IE: nginx,apache,mysql,postgres
-SERVICE_USER="docker-registry"  # execute command as another user
-SERVICE_GROUP="docker-registry" # Set the service group
+SERVICE_USER="root"  # execute command as another user
+SERVICE_GROUP="root" # Set the service group
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Set user and group ID
 SERVICE_UID="0" # set the user id
