@@ -194,9 +194,9 @@ __update_conf_files() {
 
   # define actions
   [ -n "$DOCKER_HUB_TOKEN" ] || DOCKER_HUB_TOKEN="INVALID_TOKEN"
-  [ -n "$REGISTERY" ] && for reg in ${REGISTERY//,/ }; do registry+="\"$registry\" "; done && create_registry="$(printf '%s\n' "$registry" | tr ' ' '\n' | sort -V | grep -v '^$' | tr '\n' ',' | sed 's|,$||g' | grep '^' || false)"
-  [ -n "$create_registry" ] && registry="$create_registry" || registry="localhost"
-  registry="${registry:-localhost}"
+  [ -n "$REGISTERY" ] && for reg in ${REGISTERY//,/ }; do registry+="\"$registry\" "; done && create_registry="$(printf '%s\n' "$registry" | tr ' ' '\n' | sort -V | grep -v '^$' | tr '\n' ',' | sed 's|,$||g;s| ||g' | grep '^' || false)"
+  [ -n "$create_registry" ] && registry="$create_registry"
+  registry="${registry:-"localhost"}"
   # replace variables
   [ -f "$ETC_DIR/daemon.json" ] && sed -i 's|"REPLACE_DOCKER_REGISTRIES"|'$registry'|g' "$ETC_DIR/daemon.json"
   [ -f "$CONF_DIR/daemon.json" ] && sed -i 's|"REPLACE_DOCKER_REGISTRIES"|'$registry'|g' "$CONF_DIR/daemon.json"
