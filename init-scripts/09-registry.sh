@@ -345,8 +345,8 @@ __run_start_script() {
     else
       # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       # show message if env exists
-      if [ -n "$cmd_exec" ]; then
-        [ -n "$SERVICE_USER" ] && echo "Setting up $cmd_exec to run as $SERVICE_USER" || SERVICE_USER="root"
+      if [ -n "$cmd" ]; then
+        [ -n "$SERVICE_USER" ] && echo "Setting up $cmd to run as $SERVICE_USER" || SERVICE_USER="root"
         [ -n "$SERVICE_PORT" ] && echo "$name will be running on $SERVICE_PORT" || SERVICE_PORT=""
       fi
       [ -n "$su_exec" ] && message="using $su_exec"
@@ -366,8 +366,7 @@ __run_start_script() {
           eval env -i HOME="$home" LC_CTYPE="$lc_type" PATH="$path" HOSTNAME="$sysname" USER="${SERVICE_USER:-$RUNAS_USER}" $extra_env sh -c "$cmd_exec" ||
           return 10
       else
-        su_cmd sh -c "$cmd_exec" ||
-          eval "$cmd_exec" || return 10
+        su_cmd "$cmd_exec" || eval "$cmd_exec" || return 10
       fi
     fi
   fi
