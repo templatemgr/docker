@@ -474,7 +474,7 @@ fi
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # set switch user command
 if [ "$RUNAS_USER" = "root" ]; then
-  su_cmd() { eval "$*" || return 1; }
+  su_cmd() { eval "$@" || return 1; }
 elif [ "$(builtin type -P gosu)" ]; then
   su_exec="gosu $RUNAS_USER"
   su_cmd() { gosu $RUNAS_USER "$@" || return 1; }
