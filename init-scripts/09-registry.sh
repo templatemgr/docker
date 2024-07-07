@@ -105,7 +105,7 @@ user_name="${DOCKER_REGISTRY_USER_NAME:-}"      # normal user name
 user_pass="${DOCKER_REGISTRY_USER_PASS_WORD:-}" # normal user password
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # port which service is listening on
-SERVICE_PORT="50009"
+SERVICE_PORT="5000"
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # User to use to launch service - IE: postgres
 RUNAS_USER="root" # normally root
@@ -306,6 +306,7 @@ EOF
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # script to start server
 __run_start_script() {
+  [ "$DEBUGGER" = "on" ] && echo "Enabling debugging" && set -o pipefail -x$DEBUGGER_OPTIONS || set -o pipefail
   local runExitCode=0
   local workdir="$(eval echo "${WORK_DIR:-}")"                   # expand variables
   local cmd="$(eval echo "${EXEC_CMD_BIN:-}")"                   # expand variables
