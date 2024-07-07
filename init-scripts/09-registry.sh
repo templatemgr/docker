@@ -105,7 +105,7 @@ user_name="${DOCKER_REGISTRY_USER_NAME:-}"      # normal user name
 user_pass="${DOCKER_REGISTRY_USER_PASS_WORD:-}" # normal user password
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # port which service is listening on
-SERVICE_PORT="5001"
+SERVICE_PORT="50009"
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # User to use to launch service - IE: postgres
 RUNAS_USER="root" # normally root
@@ -366,7 +366,7 @@ __run_start_script() {
           eval env -i HOME="$home" LC_CTYPE="$lc_type" PATH="$path" HOSTNAME="$sysname" USER="${SERVICE_USER:-$RUNAS_USER}" $extra_env sh -c "$cmd_exec" ||
           return 10
       else
-        su_cmd "$cmd_exec" || eval "$cmd_exec" || return 10
+        su_cmd sh -c "$cmd_exec" || eval "$cmd_exec" || return 10
       fi
     fi
   fi
