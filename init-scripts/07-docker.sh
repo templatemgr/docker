@@ -161,9 +161,9 @@ ADDITIONAL_CONFIG_DIRS=""
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Per Application Variables or imports
-REGISTERY="${REGISTERY:-REGISTERIES}"
-REGISTERY="${REGISTERY:-localhost}"
-DOCKER_HUB_TOKEN="${DOCKER_HUB_TOKEN:-DOCKER_TOKEN}"
+REGISTERY="$REGISTERY,$REGISTERIES"
+DOCKER_HUB_TOKEN="${DOCKER_HUB_TOKEN:-$DOCKER_TOKEN}"
+DOCKER_HUB_TOKEN="${DOCKER_HUB_TOKEN:-INVALID_TOKEN}"
 export REGISTERY DOCKER_HUB_TOKEN
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Custom prerun functions - IE setup WWW_ROOT_DIR
@@ -198,7 +198,17 @@ __update_conf_files() {
   [ -d "/usr/local/etc/docker/exec" ] || mkdir -p "/usr/local/etc/docker/exec"
 
   # define actions
-  [ -n "$DOCKER_HUB_TOKEN" ] || DOCKER_HUB_TOKEN="INVALID_TOKEN"
+  if [ -n "$REGISTERY" ]; then
+    set_reg=""
+    REGISTERY="${REGISTERY//,/ }"
+    for get_reg in $REGISTERY; do
+      set_reg+="\"$get_reg\" "
+    done
+    registry="$(printf '%s\n' "$set_reg" | tr ' ' '\n' | sort -V | grep -v '^$' | tr '\n' ',' | sed 's|,$||g;s| ||g' | grep '^')"
+  else
+    unset registry
+  fi
+
   # replace variables
   [ -f "$ETC_DIR/daemon.json" ] && sed -i 's|"REPLACE_DOCKER_REGISTRIES"|'$registry'|g' "$ETC_DIR/daemon.json"
   [ -f "$CONF_DIR/daemon.json" ] && sed -i 's|"REPLACE_DOCKER_REGISTRIES"|'$registry'|g' "$CONF_DIR/daemon.json"
@@ -206,11 +216,6 @@ __update_conf_files() {
   #  __find_replace "" "" "$CONF_DIR"
 
   # custom commands
-  for reg in ${REGISTERY//,/ }; do
-    registry+="\"$registry\" "
-  done
-  registry="$(printf '%s\n' "$registry" | tr ' ' '\n' | sort -V | grep -v '^$' | tr '\n' ',' | sed 's|,$||g;s| ||g' | grep '^')"
-
   if [ ! -f "$HOME/.docker/config.json" ]; then
     if [ -n "$registry" ]; then
       cat <<EOF | tee "$HOME/.docker/config.json" &>/dev/null
