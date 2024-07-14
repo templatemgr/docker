@@ -206,7 +206,7 @@ __update_conf_files() {
   #  __find_replace "" "" "$CONF_DIR"
 
   # custom commands
-  [ -f "/config/registry/config.yml" ] && [ -d "/etc/docker-registry" ] && ln -sf "/config/registry/config.yml" "/etc/docker-registry/config.yml"
+  [ -f "/config/registry/config.yml" ] && [ -d "/etc/docker-registry" ] && cp -Rf "/config/registry/config.yml" "/etc/docker-registry/config.yml"
 
   return $exitCode
 }
