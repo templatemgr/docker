@@ -48,7 +48,7 @@ __get_version() { printf '%s\n' "${1:-$(cat "/dev/stdin")}" | awk -F. '{ printf(
 # Define Variables
 EXPECTED_OS="alpine"
 TEMPLATE_NAME="docker"
-CONFIG_CHECK_FILE="docker/daemon.json"
+CONFIG_CHECK_FILE="config/registry/config.yml"
 OVER_WRITE_INIT="yes"
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 TMP_DIR="/tmp/config-$TEMPLATE_NAME"
@@ -132,7 +132,7 @@ ln -sf "/usr/local/share/CasjaysDev/scripts/bin/detectostype" "/usr/local/bin"
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 if [ -n "$CONFIG_CHECK_FILE" ]; then
   if [ ! -f "$CONFIG_DIR/$CONFIG_CHECK_FILE" ]; then
-    echo "Can not find a config file: $CONFIG_DIR$CONFIG_CHECK_FILE"
+    echo "Can not find a config file: $CONFIG_DIR/$CONFIG_CHECK_FILE"
     INSTALL_SH_EXIT_STATUS=1
   fi
 else
