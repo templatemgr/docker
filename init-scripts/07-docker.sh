@@ -195,8 +195,10 @@ __update_conf_files() {
       __copy_templates "$ETC_DIR" "$CONF_DIR"
     fi
   fi
+  [ -d "/data/docker" ] || mkdir -p "/data/docker"
+  [ -d "/var/lib/docker" ] && rm -Rf "/var/lib/docker"
   [ -d "/usr/local/etc/docker/exec" ] || mkdir -p "/usr/local/etc/docker/exec"
-
+  ln -sf "/data/docker" "/var/lib/docker"
   # define actions
   if [ -n "$REGISTERY" ]; then
     set_reg=""
