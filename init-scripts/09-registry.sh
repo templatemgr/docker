@@ -122,9 +122,9 @@ SERVICE_UID="0" # set the user id
 SERVICE_GID="0" # set the group id
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # execute command variables - keep single quotes variables will be expanded later
-EXEC_CMD_BIN='docker-registry'                        # command to execute
-EXEC_CMD_ARGS='serve /etc/docker-registry/config.yml' # command arguments
-EXEC_PRE_SCRIPT=''                                    # execute script before
+EXEC_CMD_BIN='docker-registry'                    # command to execute
+EXEC_CMD_ARGS='serve /config/registry/config.yml' # command arguments
+EXEC_PRE_SCRIPT=''                                # execute script before
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Is this service a web server
 IS_WEB_SERVER="no"
@@ -206,6 +206,7 @@ __update_conf_files() {
   #  __find_replace "" "" "$CONF_DIR"
 
   # custom commands
+  [ -f "/config/registry/config.yml" ] && [ -d "/etc/docker-registry" ] && ln -sf "/config/registry/config.yml" "/etc/docker-registry/config.yml"
 
   return $exitCode
 }
