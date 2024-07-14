@@ -159,6 +159,7 @@ ADDITIONAL_CONFIG_DIRS=""
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Per Application Variables or imports
 REGISTERY="${REGISTERY:-REGISTERIES}"
+REGISTERY="${REGISTERY:-localhost}"
 DOCKER_HUB_TOKEN="${DOCKER_HUB_TOKEN:-DOCKER_TOKEN}"
 export REGISTERY DOCKER_HUB_TOKEN
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -196,7 +197,6 @@ __update_conf_files() {
   [ -n "$DOCKER_HUB_TOKEN" ] || DOCKER_HUB_TOKEN="INVALID_TOKEN"
   [ -n "$REGISTERY" ] && for reg in ${REGISTERY//,/ }; do registry+="\"$registry\" "; done && create_registry="$(printf '%s\n' "$registry" | tr ' ' '\n' | sort -V | grep -v '^$' | tr '\n' ',' | sed 's|,$||g;s| ||g' | grep '^' || false)"
   [ -n "$create_registry" ] && registry="$create_registry"
-  registry="${registry:-"localhost"}"
   # replace variables
   [ -f "$ETC_DIR/daemon.json" ] && sed -i 's|"REPLACE_DOCKER_REGISTRIES"|'$registry'|g' "$ETC_DIR/daemon.json"
   [ -f "$CONF_DIR/daemon.json" ] && sed -i 's|"REPLACE_DOCKER_REGISTRIES"|'$registry'|g' "$CONF_DIR/daemon.json"
@@ -205,13 +205,46 @@ __update_conf_files() {
 
   # custom commands
   if [ ! -f "$HOME/.docker/config.json" ]; then
-    cat <<EOF | tee "$HOME/.docker/config.json" &>/dev/null
+    if [ -n "$registry" ]; then
+      cat <<EOF | tee "$HOME/.docker/config.json" &>/dev/null
 {
   "auths": { "https://index.docker.io/v1/": { "auth": "$DOCKER_HUB_TOKEN" } },
   "HttpHeaders": { "User-Agent": "Docker-Client/23.0.1 (linux)" },
   "insecure-registries" : [$registry]
 }
 EOF
+    else
+      cat <<EOF | tee "$HOME/.docker/config.json" &>/dev/null
+{
+  "auths": { "https://index.docker.io/v1/": { "auth": "$DOCKER_HUB_TOKEN" } },
+  "HttpHeaders": { "User-Agent": "Docker-Client/23.0.1 (linux)" }
+}
+EOF
+    fi
+  fi
+  if [ ! -f "/config/docker/daemon.json" ]; then
+    if [ -n "$registry" ]; then
+      cat <<EOF | tee "/config/docker/daemon.json" /etc/docker/daemon.json &>/dev/null
+{
+  "ip": "0.0.0.0",
+  "iptables": true,
+  "log-level": "error",
+  "experimental": true,
+  "pidfile": "/tmp/docker.pid",
+  "insecure-registries": ["REPLACE_DOCKER_REGISTRIES"]
+}
+EOF
+    else
+      cat <<EOF | tee "/config/docker/daemon.json" /etc/docker/daemon.json &>/dev/null
+{
+  "ip": "0.0.0.0",
+  "iptables": true,
+  "log-level": "error",
+  "experimental": true,
+  "pidfile": "/tmp/docker.pid"
+}
+EOF
+    fi
   fi
   # unset unneeded variables
   unset application_files filedirs
@@ -593,7 +626,7 @@ elif [ "$(builtin type -P sudo)" ]; then
 elif [ "$(builtin type -P su)" ]; then
   su_cmd() { su -s /bin/sh - $RUNAS_USER -c "$@" || return 1; }
 else
-  su_cmd() { echo "Can not switch to $RUNAS_USER: attempting to run as root" && eval "$*" || return 1; }
+  su_cmd() { echo "Can not switch to $RUNAS_USER: attempting to run as root" && eval "$@" || return 1; }
 fi
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Change to working directory

@@ -592,7 +592,7 @@ elif [ "$(builtin type -P sudo)" ]; then
 elif [ "$(builtin type -P su)" ]; then
   su_cmd() { su -s /bin/sh - $RUNAS_USER -c "$@" || return 1; }
 else
-  su_cmd() { echo "Can not switch to $RUNAS_USER: attempting to run as root" && eval "$*" || return 1; }
+  su_cmd() { echo "Can not switch to $RUNAS_USER: attempting to run as root" && eval "$@" || return 1; }
 fi
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Change to working directory
