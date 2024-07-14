@@ -197,7 +197,9 @@ __update_conf_files() {
   [ -d "/usr/local/etc/docker/exec" ] || mkdir -p "/usr/local/etc/docker/exec"
 
   # define actions
-
+  [ -d "/data/registry" ] || mkdir -p "/data/registry"
+  [ -e "/var/lib/docker-registry" ] && rm -Rf "/var/lib/docker-registry"
+  [ -L "/var/lib/docker-registry" ] || ln -sf "/data/registry" "/var/lib/docker-registry"
   # replace variables
   # __replace "" "" "$CONF_DIR/docker-registry.conf"
   # replace variables recursively
