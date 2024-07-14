@@ -48,7 +48,7 @@ __get_version() { printf '%s\n' "${1:-$(cat "/dev/stdin")}" | awk -F. '{ printf(
 # Define Variables
 EXPECTED_OS="alpine"
 TEMPLATE_NAME="docker"
-CONFIG_CHECK_FILE="config/registry/config.yml"
+CONFIG_CHECK_FILE="registry/config.yml"
 OVER_WRITE_INIT="yes"
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 TMP_DIR="/tmp/config-$TEMPLATE_NAME"
