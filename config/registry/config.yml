@@ -38,7 +38,7 @@ http:
     addr: :5001
     prometheus:
       enabled: true
-    path: /metrics
+      path: /metrics
   http2:
     disabled: false
 ################
