@@ -235,7 +235,7 @@ EOF
   "log-level": "error",
   "experimental": true,
   "pidfile": "/tmp/docker.pid",
-  "insecure-registries": ["$registry"]
+  "insecure-registries": [$registry]
 }
 EOF
     else
