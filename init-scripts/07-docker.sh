@@ -228,18 +228,18 @@ EOF
   fi
   if [ ! -f "/config/docker/daemon.json" ]; then
     if [ -n "$registry" ]; then
-      cat <<EOF | tee "/config/docker/daemon.json" /etc/docker/daemon.json &>/dev/null
+      cat <<EOF | tee "/config/docker/daemon.json" &>/dev/null
 {
   "ip": "0.0.0.0",
   "iptables": true,
   "log-level": "error",
   "experimental": true,
   "pidfile": "/tmp/docker.pid",
-  "insecure-registries": ["REPLACE_DOCKER_REGISTRIES"]
+  "insecure-registries": ["$registry"]
 }
 EOF
     else
-      cat <<EOF | tee "/config/docker/daemon.json" /etc/docker/daemon.json &>/dev/null
+      cat <<EOF | tee "/config/docker/daemon.json" &>/dev/null
 {
   "ip": "0.0.0.0",
   "iptables": true,
@@ -250,6 +250,8 @@ EOF
 EOF
     fi
   fi
+  [ -d "/etc/docker" ] || mkdir -p "/etc/docker"
+  [ -f "/config/docker/daemon.json" ] && cp -Rf "/config/docker/daemon.json" "/etc/docker/daemon.json"
   # unset unneeded variables
   unset application_files filedirs
 
