@@ -229,6 +229,7 @@ EOF
 EOF
     fi
   fi
+  [ -L "/config/docker/daemon.json" ] && unlink "/config/docker/daemon.json"
   if [ ! -f "/config/docker/daemon.json" ]; then
     if [ -n "$registry" ]; then
       cat <<EOF | tee "/config/docker/daemon.json" &>/dev/null
