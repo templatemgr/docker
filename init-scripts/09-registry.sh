@@ -195,9 +195,9 @@ __update_conf_files() {
     fi
   fi
   [ -d "/usr/local/etc/docker/exec" ] || mkdir -p "/usr/local/etc/docker/exec"
+  [ -d "/docker/registry/v2/repositories" ] || mkdir -p "/docker/registry/v2/repositories"
 
   # define actions
-  [ -d "/data/registry" ] || mkdir -p "/data/registry"
   [ -e "/var/lib/docker-registry" ] && rm -Rf "/var/lib/docker-registry"
   [ -L "/var/lib/docker-registry" ] || ln -sf "/data/registry" "/var/lib/docker-registry"
   # replace variables
@@ -266,8 +266,10 @@ __post_execute() {
   echo "Running post commands" # message
   # execute commands
   (
-    sleep 20
-    true
+    while :; do
+      docker-registry garbage-collect /config/registry/config.yml --delete-untagged=true 2>/dev/stderr | tee -a -p "/data/logs/registry/collect.log"
+      sleep 3600
+    done
   ) |& tee -p -a "$LOG_DIR/init.txt" &>/dev/null &
   return $exitCode
 }
