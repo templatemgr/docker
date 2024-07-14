@@ -199,8 +199,6 @@ __update_conf_files() {
 
   # define actions
   [ -n "$DOCKER_HUB_TOKEN" ] || DOCKER_HUB_TOKEN="INVALID_TOKEN"
-  [ -n "$REGISTERY" ] && for reg in ${REGISTERY//,/ }; do registry+="\"$registry\" "; done && create_registry="$(printf '%s\n' "$registry" | tr ' ' '\n' | sort -V | grep -v '^$' | tr '\n' ',' | sed 's|,$||g;s| ||g' | grep '^' || false)"
-  [ -n "$create_registry" ] && registry="$create_registry"
   # replace variables
   [ -f "$ETC_DIR/daemon.json" ] && sed -i 's|"REPLACE_DOCKER_REGISTRIES"|'$registry'|g' "$ETC_DIR/daemon.json"
   [ -f "$CONF_DIR/daemon.json" ] && sed -i 's|"REPLACE_DOCKER_REGISTRIES"|'$registry'|g' "$CONF_DIR/daemon.json"
@@ -208,6 +206,11 @@ __update_conf_files() {
   #  __find_replace "" "" "$CONF_DIR"
 
   # custom commands
+  for reg in ${REGISTERY//,/ }; do
+    registry+="\"$registry\" "
+  done
+  registry="$(printf '%s\n' "$registry" | tr ' ' '\n' | sort -V | grep -v '^$' | tr '\n' ',' | sed 's|,$||g;s| ||g' | grep '^')"
+
   if [ ! -f "$HOME/.docker/config.json" ]; then
     if [ -n "$registry" ]; then
       cat <<EOF | tee "$HOME/.docker/config.json" &>/dev/null
