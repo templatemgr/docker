@@ -452,10 +452,10 @@ __run_start_script() {
         export cmd_exec="$cmd $args"
         message="Starting service: $name $args $message"
       fi
-      [ -f "$START_SCRIPT" ] || printf '#!/usr/bin/env sh\n# %s\n%s\n' "$message" "$cmd_exec 2>/dev/stderr | tee -a -p /dev/stdout &" >"$START_SCRIPT"
+      [ -f "$START_SCRIPT" ] || printf '#!/usr/bin/env sh\n# %s\n%s\n' "$message" "$su_exec $cmd_exec 2>/dev/stderr | tee -a -p &" >"$START_SCRIPT"
       [ -x "$START_SCRIPT" ] || chmod 755 -Rf "$START_SCRIPT"
-      [ -n "$su_exec" ] && echo "using $su_exec" | tee -a -p /dev/stdout
-      echo "$message" | tee -a -p /dev/stdout
+      [ -n "$su_exec" ] && echo "using $su_exec" | tee -a -p
+      echo "$message" | tee -a -p
       su_cmd touch "$SERVICE_PID_FILE"
       __post_execute |& tee -p -a "$LOG_DIR/init.txt" &>/dev/null &
       if [ "$RESET_ENV" = "yes" ]; then
@@ -595,12 +595,16 @@ fi
 if [ "$RUNAS_USER" = "root" ]; then
   su_cmd() { eval "$@" || return 1; }
 elif [ "$(builtin type -P gosu)" ]; then
+  su_exec="gosu $RUNAS_USER"
   su_cmd() { gosu $RUNAS_USER "$@" || return 1; }
 elif [ "$(builtin type -P runuser)" ]; then
+  su_exec="runuser -u $RUNAS_USER"
   su_cmd() { runuser -u $RUNAS_USER "$@" || return 1; }
 elif [ "$(builtin type -P sudo)" ]; then
+  su_exec="sudo -u $RUNAS_USER"
   su_cmd() { sudo -u $RUNAS_USER "$@" || return 1; }
 elif [ "$(builtin type -P su)" ]; then
+  su_exec="su -s /bin/sh - $RUNAS_USER"
   su_cmd() { su -s /bin/sh - $RUNAS_USER -c "$@" || return 1; }
 else
   su_cmd() { echo "Can not switch to $RUNAS_USER: attempting to run as root" && eval "$@" || return 1; }
