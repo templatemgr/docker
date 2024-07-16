@@ -445,9 +445,9 @@ __run_start_script() {
         echo "$env_command"
         if [ ! -f "$START_SCRIPT" ]; then
           cat <<EOF >"$START_SCRIPT"
-          #!/usr/bin/env sh
-          # Setting up $cmd to run as ${SERVICE_USER:-root} with env
-          exec $su_exec $env_command $cmd_exec 2>/dev/stderr | tee -a -p $LOG_DIR/init.txt &
+#!/usr/bin/env sh
+# Setting up $cmd to run as ${SERVICE_USER:-root} with env
+exec $su_exec $env_command $cmd_exec 2>/dev/stderr | tee -a -p $LOG_DIR/init.txt &
 
 EOF
         fi
@@ -457,9 +457,9 @@ EOF
       else
         if [ ! -f "$START_SCRIPT" ]; then
           cat <<EOF >"$START_SCRIPT"
-          #!/usr/bin/env sh
-          # Setting up $cmd to run as ${SERVICE_USER:-root} with env
-          exec $exec $su_exec $cmd_exec 2>/dev/stderr | tee -a -p $LOG_DIR/init.txt &
+#!/usr/bin/env sh
+# Setting up $cmd to run as ${SERVICE_USER:-root} with env
+exec $exec $su_exec $cmd_exec 2>/dev/stderr | tee -a -p $LOG_DIR/init.txt &
 
 EOF
         fi
