@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # shellcheck shell=bash
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-##@Version           :  202407161941-git
+##@Version           :  202407171848-git
 # @@Author           :  Jason Hempstead
 # @@Contact          :  jason@casjaysdev.pro
 # @@License          :  LICENSE.md
-# @@ReadME           :  05-docker.sh --help
+# @@ReadME           :  07-docker.sh --help
 # @@Copyright        :  Copyright: (c) 2024 Jason Hempstead, Casjays Developments
-# @@Created          :  Tuesday, Jul 16, 2024 19:41 EDT
-# @@File             :  05-docker.sh
+# @@Created          :  Wednesday, Jul 17, 2024 18:48 EDT
+# @@File             :  07-docker.sh
 # @@Description      :
 # @@Changelog        :  New script
 # @@TODO             :  Better documentation
@@ -25,24 +25,25 @@
 # shellcheck disable=SC2199
 # shellcheck disable=SC2317
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# https://www.gnu.org/software/bash/manual/html_node/The-Set-Builtin.html
-[ "$DEBUGGER" = "on" ] && echo "Enabling debugging" && set -o pipefail -x$DEBUGGER_OPTIONS || set -o pipefail
+# run trap command on exit
+trap 'retVal=$?;[ "$SERVICE_IS_RUNNING" != "true" ] && [ -f "$SERVICE_PID_FILE" ] && rm -Rf "$SERVICE_PID_FILE";exit $retVal' SIGINT SIGTERM EXIT
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-printf '%s\n' "# - - - Initializing docker - - - #"
+# setup debugging - https://www.gnu.org/software/bash/manual/html_node/The-Set-Builtin.html
+[ -f "/config/.debug" ] && [ -z "$DEBUGGER_OPTIONS" ] && export DEBUGGER_OPTIONS="$(<"/config/.debug")" || DEBUGGER_OPTIONS="${DEBUGGER_OPTIONS:-}"
+{ [ "$DEBUGGER" = "on" ] || [ -f "/config/.debug" ]; } && echo "Enabling debugging" && set -xo pipefail -x$DEBUGGER_OPTIONS && export DEBUGGER="on" || set -o pipefail
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+export PATH="/usr/local/etc/docker/bin:/usr/local/bin:/usr/bin:/usr/sbin:/bin:/sbin"
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+SCRIPT_FILE="$0"
+SERVICE_NAME="docker"
+SCRIPT_NAME="$(basename "$SCRIPT_FILE" 2>/dev/null)"
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # exit if __start_init_scripts function hasn't been Initialized
 if [ ! -f "/run/__start_init_scripts.pid" ]; then
   echo "__start_init_scripts function hasn't been Initialized" >&2
+  SERVICE_IS_RUNNING="no"
   exit 1
 fi
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-SERVICE_NAME="docker"
-SCRIPT_NAME="$(basename "$0" 2>/dev/null)"
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-export PATH="/usr/local/etc/docker/bin:/usr/local/bin:/usr/bin:/usr/sbin:/bin:/sbin"
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# run trap command on exit
-trap 'retVal=$?;[ "$SERVICE_IS_RUNNING" != "true" ] && [ -f "$SERVICE_PID_FILE" ] && rm -Rf "$SERVICE_PID_FILE";exit $retVal' SIGINT SIGTERM EXIT
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # import the functions file
 if [ -f "/usr/local/etc/docker/functions/entrypoint.sh" ]; then
@@ -54,19 +55,21 @@ for set_env in "/root/env.sh" "/usr/local/etc/docker/env"/*.sh "/config/env"/*.s
   [ -f "$set_env" ] && . "$set_env"
 done
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+printf '%s\n' "# - - - Initializing $SERVICE_NAME - - - #"
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Run any pre-execution checks
 __run_pre_execute_checks() {
   # Set variables
   local exitStatus=0
 
   # Put command to execute in parentheses
-  (
+  {
     true
-  ) && exitStatus=0 || exitStatus=5
+  } && exitStatus=0 || exitStatus=5
   if [ $exitStatus -ne 0 ]; then
     echo "The pre-execution check has failed" >&2
     [ -f "$SERVICE_PID_FILE" ] && rm -Rf "$SERVICE_PID_FILE"
-    return 1
+    exit 1
   fi
   return $exitStatus
 }
@@ -205,7 +208,13 @@ __update_conf_files() {
     fi
   fi
   [ -d "/usr/local/etc/docker/exec" ] || mkdir -p "/usr/local/etc/docker/exec"
-  # define actions
+
+  # replace variables
+  # __replace "" "" "$CONF_DIR/docker.conf"
+  # replace variables recursively
+  #  __find_replace "" "" "$CONF_DIR"
+
+  # custom commands
   [ -d "/data/docker" ] || mkdir -p "/data/docker"
   [ -d "/var/lib/docker" ] && rm -Rf "/var/lib/docker"
   [ -d "/usr/local/etc/docker/exec" ] || mkdir -p "/usr/local/etc/docker/exec"
@@ -221,16 +230,7 @@ __update_conf_files() {
     unset registry
   fi
 
-  # replace variables
-  [ -f "$ETC_DIR/daemon.json" ] && sed -i 's|"REPLACE_DOCKER_REGISTRIES"|'$registry'|g' "$ETC_DIR/daemon.json"
-  [ -f "$CONF_DIR/daemon.json" ] && sed -i 's|"REPLACE_DOCKER_REGISTRIES"|'$registry'|g' "$CONF_DIR/daemon.json"
-
-  # replace variables
-  # __replace "" "" "$CONF_DIR/docker.conf"
-  # replace variables recursively
-  #  __find_replace "" "" "$CONF_DIR"
-
-  # custom commands
+  # define actions
   if [ ! -f "$HOME/.docker/config.json" ]; then
     if [ -n "$registry" ]; then
       cat <<EOF | tee "$HOME/.docker/config.json" &>/dev/null
@@ -277,6 +277,10 @@ EOF
   [ -d "/etc/docker" ] || mkdir -p "/etc/docker"
   [ -f "/config/docker/daemon.json" ] && cp -Rf "/config/docker/daemon.json" "/etc/docker/daemon.json"
 
+  [ -f "$ETC_DIR/daemon.json" ] && sed -i 's|"REPLACE_DOCKER_REGISTRIES"|'$registry'|g' "$ETC_DIR/daemon.json"
+  [ -f "$CONF_DIR/daemon.json" ] && sed -i 's|"REPLACE_DOCKER_REGISTRIES"|'$registry'|g' "$CONF_DIR/daemon.json"
+
+  # exit function
   return $exitCode
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -323,18 +327,27 @@ __pre_execute() {
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # function to run after executing
 __post_execute() {
-  local exitCode=0                                               # default exit code
-  local sysname="${SERVER_NAME:-${FULL_DOMAIN_NAME:-$HOSTNAME}}" # set hostname
+  local waitTime=60                                               # how long to wait before executing
+  local postMessageST="Running post commands for $SERVICE_NAME"   # message to show at start
+  local postMessageEnd="Finished post commands for $SERVICE_NAME" # message to show at completion
+  local sysname="${SERVER_NAME:-${FULL_DOMAIN_NAME:-$HOSTNAME}}"  # set hostname
 
-  sleep 60                     # how long to wait before executing
-  echo "Running post commands" # message
   # execute commands
   (
-    true
-    return $?
-  ) 2>"/dev/stderr" | tee -p -a "$LOG_DIR/init.txt" >/dev/null
-  exitCode="$?"
-  return $exitCode
+    # wait
+    sleep $waitTime
+    # show message
+    __banner "$postMessageST"
+    # commands to execute
+    {
+      true
+    }
+    # set exitCode
+    retVal=$?
+    # show exit message
+    __banner "$postMessageEnd: Status $retVal"
+  ) 2>"/dev/stderr" | tee -p -a "$LOG_DIR/init.txt" >/dev/null &
+  return
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # use this function to update config files - IE: change port
@@ -345,7 +358,9 @@ __pre_message() {
   [ -n "$root_user_name" ] && echo "root username:     $root_user_name" && echo "$root_user_name" >"${ROOT_FILE_PREFIX}/${SERVICE_NAME}_name"
   [ -n "$root_user_pass" ] && __printf_space "40" "root password:" "saved to ${ROOT_FILE_PREFIX}/${SERVICE_NAME}_pass" && echo "$root_user_pass" >"${ROOT_FILE_PREFIX}/${SERVICE_NAME}_pass"
   [ -n "$PRE_EXEC_MESSAGE" ] && eval echo "$PRE_EXEC_MESSAGE"
+  # execute commands
 
+  # set exitCode
   return $exitCode
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -353,7 +368,9 @@ __pre_message() {
 __update_ssl_conf() {
   local exitCode=0
   local sysname="${SERVER_NAME:-${FULL_DOMAIN_NAME:-$HOSTNAME}}" # set hostname
+  # execute commands
 
+  # set exitCode
   return $exitCode
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -420,8 +437,8 @@ __run_start_script() {
       echo "$name is already running" >&2
       return 0
     else
-      # cd to dir
       # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+      # cd to dir
       __cd "${workdir:-$home}"
       # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       # show message if env exists
@@ -431,44 +448,47 @@ __run_start_script() {
       fi
       if [ -n "$pre" ] && [ -n "$(command -v "$pre" 2>/dev/null)" ]; then
         export cmd_exec="$pre $cmd $args"
-        message="Starting service: $name $args through $pre $message"
+        message="Starting service: $name $args through $pre"
       else
         export cmd_exec="$cmd $args"
-        message="Starting service: $name $args $message"
+        message="Starting service: $name $args"
       fi
       [ -n "$su_exec" ] && echo "using $su_exec" | tee -a -p "$LOG_DIR/init.txt"
       echo "$message" | tee -a -p "$LOG_DIR/init.txt"
       su_cmd touch "$SERVICE_PID_FILE"
-      __post_execute 2>/dev/stderr | tee -p -a "$LOG_DIR/init.txt" >/dev/null &
+      __post_execute 2>"/dev/stderr" | tee -p -a "$LOG_DIR/init.txt" >/dev/null &
       if [ "$RESET_ENV" = "yes" ]; then
         env_command="$(eval echo "env -i HOME=\"$home\" LC_CTYPE=\"$lc_type\" PATH=\"$path\" HOSTNAME=\"$sysname\" USER=\"${SERVICE_USER:-$RUNAS_USER}\" $extra_env")"
         echo "$env_command"
         if [ ! -f "$START_SCRIPT" ]; then
           cat <<EOF >"$START_SCRIPT"
 #!/usr/bin/env sh
+trap 'retVal=\$?;[ -f "\$SERVICE_PID_FILE" ] && rm -Rf "\$SERVICE_PID_FILE";exit \$retVal' ERR
 # Setting up $cmd to run as ${SERVICE_USER:-root} with env
-exec $su_exec $env_command $cmd_exec 2>/dev/stderr | tee -a -p $LOG_DIR/init.txt &
+SERVICE_PID_FILE="$SERVICE_PID_FILE"
+$su_exec $env_command $cmd_exec 2>"/dev/stderr" | tee -a -p $LOG_DIR/init.txt &
+echo \$! >"\$SERVICE_PID_FILE"
 
 EOF
         fi
-        [ -x "$START_SCRIPT" ] || chmod 755 -Rf "$START_SCRIPT"
-        sh -c "$START_SCRIPT"
-        runExitCode=$?
       else
         if [ ! -f "$START_SCRIPT" ]; then
           cat <<EOF >"$START_SCRIPT"
 #!/usr/bin/env sh
+trap 'retVal=\$?;[ -f "\$SERVICE_PID_FILE" ] && rm -Rf "\$SERVICE_PID_FILE";exit \$retVal' ERR
 # Setting up $cmd to run as ${SERVICE_USER:-root}
-exec $exec $su_exec $cmd_exec 2>/dev/stderr | tee -a -p $LOG_DIR/init.txt &
+SERVICE_PID_FILE="$SERVICE_PID_FILE"
+eval $su_exec $cmd_exec 2>"/dev/stderr" | tee -a -p $LOG_DIR/init.txt &
+echo \$! >"\$SERVICE_PID_FILE"
 
 EOF
         fi
-        [ -x "$START_SCRIPT" ] || chmod 755 -Rf "$START_SCRIPT"
-        sh -c "$START_SCRIPT"
-        runExitCode=$?
       fi
-      return $runExitCode
     fi
+    [ -x "$START_SCRIPT" ] || chmod 755 -Rf "$START_SCRIPT"
+    eval sh -c "$START_SCRIPT"
+    runExitCode=$?
+    return $runExitCode
   fi
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -568,6 +588,7 @@ __initialize_db_users
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Only run check
 if [ "$1" = "check" ]; then
+  shift $#
   __proc_check "$EXEC_CMD_NAME" || __proc_check "$EXEC_CMD_BIN"
   exit $?
 fi
@@ -619,12 +640,20 @@ __run_secure_function
 # run the pre execute commands
 __pre_execute
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-__run_start_script "$@" |& tee -p -a "/data/logs/entrypoint.log" "$LOG_DIR/init.txt" >/dev/null && errorCode=0 || errorCode=10
-if [ "$errorCode" -ne 0 ] && [ -n "$EXEC_CMD_BIN" ]; then
-  eval echo "Failed to execute: ${cmd_exec:-$EXEC_CMD_BIN $EXEC_CMD_ARGS}" |& tee -p -a "/data/logs/entrypoint.log" "$LOG_DIR/init.txt"
-  rm -Rf "$SERVICE_PID_FILE"
-  SERVICE_EXIT_CODE=10
-  SERVICE_IS_RUNNING="false"
+__run_start_script 2>>/dev/stderr | tee -p -a "/data/logs/entrypoint.log" >/dev/null && errorCode=0 || errorCode=10
+if [ -n "$EXEC_CMD_BIN" ]; then
+  if [ "$errorCode" -ne 0 ]; then
+    echo "Failed to execute: ${cmd_exec:-$EXEC_CMD_BIN $EXEC_CMD_ARGS}" | tee -p -a "/data/logs/entrypoint.log" "$LOG_DIR/init.txt"
+    rm -Rf "$SERVICE_PID_FILE"
+    SERVICE_EXIT_CODE=10
+    SERVICE_IS_RUNNING="false"
+  else
+    SERVICE_EXIT_CODE=0
+    SERVICE_IS_RUNNING="true"
+  fi
+  SERVICE_EXIT_CODE=0
 fi
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+__banner "Initializing of $SERVICE_NAME has completed with statusCode: $SERVICE_EXIT_CODE" | tee -p -a "/data/logs/entrypoint.log" "$LOG_DIR/init.txt"
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 exit $SERVICE_EXIT_CODE
