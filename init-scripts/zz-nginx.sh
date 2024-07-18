@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 # shellcheck shell=bash
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-##@Version           :  202407171849-git
+##@Version           :  202407172047-git
 # @@Author           :  Jason Hempstead
 # @@Contact          :  jason@casjaysdev.pro
 # @@License          :  LICENSE.md
 # @@ReadME           :  zz-nginx.sh --help
 # @@Copyright        :  Copyright: (c) 2024 Jason Hempstead, Casjays Developments
-# @@Created          :  Wednesday, Jul 17, 2024 18:49 EDT
+# @@Created          :  Wednesday, Jul 17, 2024 20:47 EDT
 # @@File             :  zz-nginx.sh
-# @@Description      :  
+# @@Description      :
 # @@Changelog        :  New script
 # @@TODO             :  Better documentation
-# @@Other            :  
-# @@Resource         :  
+# @@Other            :
+# @@Resource         :
 # @@Terminal App     :  no
 # @@sudo/root        :  no
 # @@Template         :  other/start-service
@@ -121,7 +121,7 @@ user_name="${NGINX_USER_NAME:-}"      # normal user name
 user_pass="${NGINX_USER_PASS_WORD:-}" # normal user password
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # port which service is listening on
-SERVICE_PORT=""
+SERVICE_PORT=""80
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # User to use to launch service - IE: postgres
 RUNAS_USER="root" # normally root
@@ -135,9 +135,9 @@ SERVICE_UID="0" # set the user id
 SERVICE_GID="0" # set the group id
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # execute command variables - keep single quotes variables will be expanded later
-EXEC_CMD_BIN='nginx' # command to execute
-EXEC_CMD_ARGS=''                          # command arguments
-EXEC_PRE_SCRIPT=''                        # execute script before
+EXEC_CMD_BIN='nginx'                   # command to execute
+EXEC_CMD_ARGS='-c $ETC_DIR/nginx.conf' # command arguments
+EXEC_PRE_SCRIPT=''                     # execute script before
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Is this service a web server
 IS_WEB_SERVER="no"
@@ -397,26 +397,27 @@ __run_start_script() {
       __post_execute 2>"/dev/stderr" | tee -p -a "$LOG_DIR/init.txt" >/dev/null &
       if [ "$RESET_ENV" = "yes" ]; then
         env_command="$(eval echo "env -i HOME=\"$home\" LC_CTYPE=\"$lc_type\" PATH=\"$path\" HOSTNAME=\"$sysname\" USER=\"${SERVICE_USER:-$RUNAS_USER}\" $extra_env")"
-        echo "$env_command"
+        execute_command="$(__trim "$su_exec $env_command $cmd_exec")"
         if [ ! -f "$START_SCRIPT" ]; then
           cat <<EOF >"$START_SCRIPT"
 #!/usr/bin/env sh
 trap 'retVal=\$?;[ -f "\$SERVICE_PID_FILE" ] && rm -Rf "\$SERVICE_PID_FILE";exit \$retVal' ERR
 # Setting up $cmd to run as ${SERVICE_USER:-root} with env
 SERVICE_PID_FILE="$SERVICE_PID_FILE"
-$su_exec $env_command $cmd_exec 2>"/dev/stderr" | tee -a -p $LOG_DIR/init.txt &
+$execute_command 2>"/dev/stderr" >>"$LOG_DIR/init.txt" &
 echo \$! >"\$SERVICE_PID_FILE"
 
 EOF
         fi
       else
         if [ ! -f "$START_SCRIPT" ]; then
+          execute_command="$(__trim "$su_exec $cmd_exec")"
           cat <<EOF >"$START_SCRIPT"
 #!/usr/bin/env sh
 trap 'retVal=\$?;[ -f "\$SERVICE_PID_FILE" ] && rm -Rf "\$SERVICE_PID_FILE";exit \$retVal' ERR
 # Setting up $cmd to run as ${SERVICE_USER:-root}
 SERVICE_PID_FILE="$SERVICE_PID_FILE"
-eval $su_exec $cmd_exec 2>"/dev/stderr" | tee -a -p $LOG_DIR/init.txt &
+eval $execute_command 2>>"/dev/stderr" >>"$LOG_DIR/init.txt" &
 echo \$! >"\$SERVICE_PID_FILE"
 
 EOF

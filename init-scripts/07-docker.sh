@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # shellcheck shell=bash
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-##@Version           :  202407171848-git
+##@Version           :  202407172047-git
 # @@Author           :  Jason Hempstead
 # @@Contact          :  jason@casjaysdev.pro
 # @@License          :  LICENSE.md
 # @@ReadME           :  07-docker.sh --help
 # @@Copyright        :  Copyright: (c) 2024 Jason Hempstead, Casjays Developments
-# @@Created          :  Wednesday, Jul 17, 2024 18:48 EDT
+# @@Created          :  Wednesday, Jul 17, 2024 20:47 EDT
 # @@File             :  07-docker.sh
 # @@Description      :
 # @@Changelog        :  New script
@@ -215,6 +215,8 @@ __update_conf_files() {
   #  __find_replace "" "" "$CONF_DIR"
 
   # custom commands
+
+  # define actions
   [ -d "/data/docker" ] || mkdir -p "/data/docker"
   [ -d "/var/lib/docker" ] && rm -Rf "/var/lib/docker"
   [ -d "/usr/local/etc/docker/exec" ] || mkdir -p "/usr/local/etc/docker/exec"
@@ -459,26 +461,27 @@ __run_start_script() {
       __post_execute 2>"/dev/stderr" | tee -p -a "$LOG_DIR/init.txt" >/dev/null &
       if [ "$RESET_ENV" = "yes" ]; then
         env_command="$(eval echo "env -i HOME=\"$home\" LC_CTYPE=\"$lc_type\" PATH=\"$path\" HOSTNAME=\"$sysname\" USER=\"${SERVICE_USER:-$RUNAS_USER}\" $extra_env")"
-        echo "$env_command"
+        execute_command="$(__trim "$su_exec $env_command $cmd_exec")"
         if [ ! -f "$START_SCRIPT" ]; then
           cat <<EOF >"$START_SCRIPT"
 #!/usr/bin/env sh
 trap 'retVal=\$?;[ -f "\$SERVICE_PID_FILE" ] && rm -Rf "\$SERVICE_PID_FILE";exit \$retVal' ERR
 # Setting up $cmd to run as ${SERVICE_USER:-root} with env
 SERVICE_PID_FILE="$SERVICE_PID_FILE"
-$su_exec $env_command $cmd_exec 2>"/dev/stderr" | tee -a -p $LOG_DIR/init.txt &
+$execute_command 2>"/dev/stderr" >>"$LOG_DIR/init.txt" &
 echo \$! >"\$SERVICE_PID_FILE"
 
 EOF
         fi
       else
         if [ ! -f "$START_SCRIPT" ]; then
+          execute_command="$(__trim "$su_exec $cmd_exec")"
           cat <<EOF >"$START_SCRIPT"
 #!/usr/bin/env sh
 trap 'retVal=\$?;[ -f "\$SERVICE_PID_FILE" ] && rm -Rf "\$SERVICE_PID_FILE";exit \$retVal' ERR
 # Setting up $cmd to run as ${SERVICE_USER:-root}
 SERVICE_PID_FILE="$SERVICE_PID_FILE"
-eval $su_exec $cmd_exec 2>"/dev/stderr" | tee -a -p $LOG_DIR/init.txt &
+eval $execute_command 2>>"/dev/stderr" >>"$LOG_DIR/init.txt" &
 echo \$! >"\$SERVICE_PID_FILE"
 
 EOF
