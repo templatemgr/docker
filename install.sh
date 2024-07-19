@@ -118,6 +118,7 @@ fi
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 [ -d "$INIT_DIR" ] && chmod -Rf 755 "$INIT_DIR"/*.sh || true
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+[ -d "$TMP_DIR/functions" ] && cp -Rf "$TMP_DIR/functions/." "/usr/local/etc/docker/functions/" || true
 [ -d "$TMP_DIR/bin" ] && chmod -Rf 755 "$TMP_DIR/bin/" && cp -Rf "$TMP_DIR/bin/." "/usr/local/bin/" || true
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Other files to copy to system
