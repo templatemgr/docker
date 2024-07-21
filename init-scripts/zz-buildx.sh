@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 # shellcheck shell=bash
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-##@Version           :  202407191744-git
+##@Version           :  202407211400-git
 # @@Author           :  Jason Hempstead
 # @@Contact          :  jason@casjaysdev.pro
 # @@License          :  LICENSE.md
-# @@ReadME           :  zz-nginx.sh --help
+# @@ReadME           :  zz-buildx.sh --help
 # @@Copyright        :  Copyright: (c) 2024 Jason Hempstead, Casjays Developments
-# @@Created          :  Friday, Jul 19, 2024 17:44 EDT
-# @@File             :  zz-nginx.sh
-# @@Description      :
+# @@Created          :  Sunday, Jul 21, 2024 14:00 EDT
+# @@File             :  zz-buildx.sh
+# @@Description      :  
 # @@Changelog        :  New script
 # @@TODO             :  Better documentation
-# @@Other            :
-# @@Resource         :
+# @@Other            :  
+# @@Resource         :  
 # @@Terminal App     :  no
 # @@sudo/root        :  no
 # @@Template         :  other/start-service
@@ -35,7 +35,7 @@ trap 'retVal=$?;[ "$SERVICE_IS_RUNNING" != "yes" ] && [ -f "$SERVICE_PID_FILE" ]
 export PATH="/usr/local/etc/docker/bin:/usr/local/bin:/usr/bin:/usr/sbin:/bin:/sbin"
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 SCRIPT_FILE="$0"
-SERVICE_NAME="nginx"
+SERVICE_NAME="buildx"
 SCRIPT_NAME="$(basename "$SCRIPT_FILE" 2>/dev/null)"
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # exit if __start_init_scripts function hasn't been Initialized
@@ -89,21 +89,21 @@ PRE_EXEC_MESSAGE=""
 # Set the database root dir
 DATABASE_BASE_DIR="${DATABASE_BASE_DIR:-/data/db}"
 # set the database directory
-DATABASE_DIR="${DATABASE_DIR_NGINX:-/data/db/sqlite}"
+DATABASE_DIR="${DATABASE_DIR_BUILDX:-/data/db/sqlite}"
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Set webroot
 WWW_ROOT_DIR="/usr/share/httpd/default"
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Default predefined variables
-DATA_DIR="/data/nginx"   # set data directory
-CONF_DIR="/config/nginx" # set config directory
+DATA_DIR="/data/buildx"   # set data directory
+CONF_DIR="/config/buildx" # set config directory
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # set the containers etc directory
-ETC_DIR="/etc/nginx"
+ETC_DIR="/etc/buildx"
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-TMP_DIR="/tmp/nginx"
-RUN_DIR="/run/nginx"       # set scripts pid dir
-LOG_DIR="/data/logs/nginx" # set log directory
+TMP_DIR="/tmp/buildx"
+RUN_DIR="/run/buildx"       # set scripts pid dir
+LOG_DIR="/data/logs/buildx" # set log directory
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Set the working dir
 WORK_DIR="" # set working directory
@@ -113,31 +113,31 @@ ROOT_FILE_PREFIX="/config/secure/auth/root" # directory to save username/passwor
 USER_FILE_PREFIX="/config/secure/auth/user" # directory to save username/password for normal user
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # root/admin user info password/random]
-root_user_name="${NGINX_ROOT_USER_NAME:-}" # root user name
-root_user_pass="${NGINX_ROOT_PASS_WORD:-}" # root user password
+root_user_name="${BUILDX_ROOT_USER_NAME:-}" # root user name
+root_user_pass="${BUILDX_ROOT_PASS_WORD:-}" # root user password
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Normal user info [password/random]
-user_name="${NGINX_USER_NAME:-}"      # normal user name
-user_pass="${NGINX_USER_PASS_WORD:-}" # normal user password
+user_name="${BUILDX_USER_NAME:-}"      # normal user name
+user_pass="${BUILDX_USER_PASS_WORD:-}" # normal user password
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # port which service is listening on
-SERVICE_PORT="80"
+SERVICE_PORT=""
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # User to use to launch service - IE: postgres
 RUNAS_USER="root" # normally root
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # User and group in which the service switches to - IE: nginx,apache,mysql,postgres
-SERVICE_USER="nginx"  # execute command as another user
-SERVICE_GROUP="nginx" # Set the service group
+SERVICE_USER="buildx"  # execute command as another user
+SERVICE_GROUP="buildx" # Set the service group
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Set user and group ID
 SERVICE_UID="0" # set the user id
 SERVICE_GID="0" # set the group id
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # execute command variables - keep single quotes variables will be expanded later
-EXEC_CMD_BIN='nginx'                   # command to execute
-EXEC_CMD_ARGS='-c $ETC_DIR/nginx.conf' # command arguments
-EXEC_PRE_SCRIPT=''                     # execute script before
+EXEC_CMD_BIN='buildx' # command to execute
+EXEC_CMD_ARGS=''                          # command arguments
+EXEC_PRE_SCRIPT=''                        # execute script before
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Is this service a web server
 IS_WEB_SERVER="no"
@@ -149,8 +149,8 @@ IS_DATABASE_SERVICE="no"
 PATH="./bin:$PATH"
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Load variables from config
-[ -f "$CONF_DIR/env/nginx.script.sh" ] && . "$CONF_DIR/env/nginx.script.sh" # Generated by my dockermgr script
-[ -f "$CONF_DIR/env/nginx.sh" ] && . "$CONF_DIR/env/nginx.sh"               # Overwrite the variabes
+[ -f "$CONF_DIR/env/buildx.script.sh" ] && . "$CONF_DIR/env/buildx.script.sh" # Generated by my dockermgr script
+[ -f "$CONF_DIR/env/buildx.sh" ] && . "$CONF_DIR/env/buildx.sh"               # Overwrite the variabes
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Additional predefined variables
 
@@ -210,7 +210,7 @@ __update_conf_files() {
   [ -d "/usr/local/etc/docker/exec" ] || mkdir -p "/usr/local/etc/docker/exec"
 
   # replace variables
-  # __replace "" "" "$CONF_DIR/nginx.conf"
+  # __replace "" "" "$CONF_DIR/buildx.conf"
   # replace variables recursively
   #  __find_replace "" "" "$CONF_DIR"
 
@@ -266,11 +266,9 @@ __pre_execute() {
 # function to run after executing
 __post_execute() {
   local waitTime=60                                               # how long to wait before executing
-  local dateformat="'%y-%m-%d"                                    # set date format
   local postMessageST="Running post commands for $SERVICE_NAME"   # message to show at start
   local postMessageEnd="Finished post commands for $SERVICE_NAME" # message to show at completion
   local sysname="${SERVER_NAME:-${FULL_DOMAIN_NAME:-$HOSTNAME}}"  # set hostname
-  local BUILDX_BUILD_INTERVAL="${BUILDX_BUILD_INTERVAL:-3600}"    # how long to wait before rebuilding
 
   # execute commands
   (
@@ -280,23 +278,7 @@ __post_execute() {
     __banner "$postMessageST"
     # commands to execute
     {
-      while :; do
-        local date="$(date +"$dateformat")"
-        docker_files="$(find /data/build -name 'Dockerfile*' | sort -uV 2>/dev/null || grep -v '^$' | grep '^' || false)"
-        if [ -n "$docker_files" ]; then
-          for file in $docker_files; do
-            (
-              printf '# # # Building %s is Starting on %s\n' "$file" "$(date)"
-              buildx --raw "$file"
-              printf '# # # Building %s has completed on %s with exit %s\n\n' "$file" "$(date)" "$?"
-              sleep $BUILDX_BUILD_INTERVAL
-            ) | tee -a -p "$LOG_DIR/buildx-$date.log"
-          done
-        else
-          echo "There are no Dockerfiles in /data/build"
-          sleep 60
-        fi
-      done
+      true
     }
     # set exitCode
     retVal=$?
@@ -334,14 +316,14 @@ __create_service_env() {
   cat <<EOF | tee -p "/config/env/${SERVICE_NAME:-$SCRIPT_NAME}.sh" &>/dev/null
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # root/admin user info [password/random]
-#ENV_ROOT_USER_NAME="${ENV_ROOT_USER_NAME:-$NGINX_ROOT_USER_NAME}"   # root user name
-#ENV_ROOT_USER_PASS="${ENV_ROOT_USER_NAME:-$NGINX_ROOT_PASS_WORD}"   # root user password
+#ENV_ROOT_USER_NAME="${ENV_ROOT_USER_NAME:-$BUILDX_ROOT_USER_NAME}"   # root user name
+#ENV_ROOT_USER_PASS="${ENV_ROOT_USER_NAME:-$BUILDX_ROOT_PASS_WORD}"   # root user password
 #root_user_name="${ENV_ROOT_USER_NAME:-$root_user_name}"                              #
 #root_user_pass="${ENV_ROOT_USER_PASS:-$root_user_pass}"                              #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #Normal user info [password/random]
-#ENV_USER_NAME="${ENV_USER_NAME:-$NGINX_USER_NAME}"                  #
-#ENV_USER_PASS="${ENV_USER_PASS:-$NGINX_USER_PASS_WORD}"             #
+#ENV_USER_NAME="${ENV_USER_NAME:-$BUILDX_USER_NAME}"                  #
+#ENV_USER_PASS="${ENV_USER_PASS:-$BUILDX_USER_PASS_WORD}"             #
 #user_name="${ENV_USER_NAME:-$user_name}"                                             # normal user name
 #user_pass="${ENV_USER_PASS:-$user_pass}"                                             # normal user password
 
