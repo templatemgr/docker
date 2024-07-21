@@ -145,7 +145,7 @@ fi
 [ "$WEB_SERVER_PORT" = "443" ] && SSL_ENABLED="yes"
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # export variables
-
+export WORK_DIR="${WORK_DIR:-/data/build}"
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # is already Initialized
 [ -f "$ENTRYPOINT_DATA_INIT_FILE" ] && DATA_DIR_INITIALIZED="yes" || DATA_DIR_INITIALIZED="no"
