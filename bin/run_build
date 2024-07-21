@@ -81,7 +81,7 @@ fi
 clear
 if [ -z "$(pgrep -x dockerd)" ]; then
   echo "Starting dockerd"
-  /usr/local/etc/docker/init.d/07-docker.sh &>/dev/null &
+  /usr/local/etc/docker/init.d/05-docker.sh &>/dev/null &
   sleep 10 && [ -n "$(pgrep -x dockerd)" ] || { echo "dockerd is not running" && exit 1; }
 fi
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
