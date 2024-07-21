@@ -50,6 +50,8 @@ __get_ip4() { ip a 2>/dev/null | grep -w 'inet' | awk '{print $2}' | grep -vE '^
 __find_file_relative() { find "$1"/* -not -path '*env/*' -not -path '.git*' -type f 2>/dev/null | sed 's|'$1'/||g' | sort -u | grep -v '^$' | grep '^' || false; }
 __find_directory_relative() { find "$1"/* -not -path '*env/*' -not -path '.git*' -type d 2>/dev/null | sed 's|'$1'/||g' | sort -u | grep -v '^$' | grep '^' || false; }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+__is_running() { ps -eo args | awk '{print $1,$2,$3}' | sed 's|:||g' | sort -u | grep -vE 'grep|COMMAND|awk|tee|ps|sed|sort|tail' | grep "$1" | grep -q "${2:-^}" && return 0 || return 1; }
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 __format_variables() { printf '%s\n' "${@//,/ }" | tr ' ' '\n' | sort -RVu | grep -v '^$' | tr '\n' ' ' | __clean_variables | grep '^' || return 3; }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 __clean_variables() {
@@ -500,6 +502,7 @@ __exec_command() {
 __start_init_scripts() {
   [ "$1" = " " ] && shift 1
   [ "$DEBUGGER" = "on" ] && echo "Enabling debugging" && set -o pipefail -x$DEBUGGER_OPTIONS || set -o pipefail
+  local retVal=0
   local basename=""
   local init_pids=""
   local initStatus=0
@@ -520,8 +523,9 @@ __start_init_scripts() {
           name="$(basename "$init")"
           printf '# - - - executing file: %s\n' "$init"
           eval sh -c "$init &" && sleep 60 || { sleep 20 && false; }
-          initStatus=$(($? + initStatus))
-          printf '# - - - %s has been executed\n' "$name"
+          retVal=$?
+          initStatus=$((retVal + initStatus))
+          printf '# - - - %s has been executed - status: %s\n' "$name" "$retVal"
           echo ""
         fi
       done
@@ -924,6 +928,6 @@ export ENTRYPOINT_DATA_INIT_FILE DATA_DIR_INITIALIZED ENTRYPOINT_CONFIG_INIT_FIL
 export ENTRYPOINT_PID_FILE ENTRYPOINT_INIT_FILE ENTRYPOINT_FIRST_RUN
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # export the functions
-export -f __start_init_scripts
+export -f __start_init_scripts __is_running
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # end of functions
