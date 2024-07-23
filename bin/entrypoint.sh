@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 # shellcheck shell=bash
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-##@Version           :  202407191725-git
+##@Version           :  202407231544-git
 # @@Author           :  Jason Hempstead
 # @@Contact          :  jason@casjaysdev.pro
 # @@License          :  LICENSE.md
 # @@ReadME           :  entrypoint.sh --help
 # @@Copyright        :  Copyright: (c) 2024 Jason Hempstead, Casjays Developments
-# @@Created          :  Friday, Jul 19, 2024 17:25 EDT
+# @@Created          :  Tuesday, Jul 23, 2024 15:44 EDT
 # @@File             :  entrypoint.sh
 # @@Description      :  Entrypoint file for docker
 # @@Changelog        :  New script
 # @@TODO             :  Better documentation
-# @@Other            :
-# @@Resource         :
+# @@Other            :  
+# @@Resource         :  
 # @@Terminal App     :  no
 # @@sudo/root        :  no
 # @@Template         :  other/docker-entrypoint
@@ -69,19 +69,19 @@ SERVICE_USER=""  # execute command as another user
 SERVICE_GROUP="" # Set the service group
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Primary server port- will be added to server ports
-WEB_SERVER_PORT="80" # port : 80,443
+WEB_SERVER_PORT="" # port : 80,443
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Secondary ports
-SERVER_PORTS="2375,5000" # specifiy other ports
+SERVER_PORTS="" # specifiy other ports
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Server directories
 WWW_ROOT_DIR="" # set default web dir
 DATABASE_DIR="" # set database dir
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Healthcheck variables
-HEALTH_ENABLED="yes"                               # enable healthcheck [yes/no]
-SERVICES_LIST="tini,dockerd,docker-registry,nginx" # comma seperated list of processes for the healthcheck
-HEALTH_ENDPOINTS="http://localhost/health"         # url endpoints: [http://localhost/health,http://localhost/test]
+HEALTH_ENABLED="yes" # enable healthcheck [yes/no]
+SERVICES_LIST="tini" # comma seperated list of processes for the healthcheck
+HEALTH_ENDPOINTS=""  # url endpoints: [http://localhost/health,http://localhost/test]
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Update path var
 export PATH="${PATH:-}"
