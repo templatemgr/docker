@@ -9,11 +9,11 @@
 # @@Copyright        :  Copyright: (c) 2024 Jason Hempstead, Casjays Developments
 # @@Created          :  Sunday, Jul 21, 2024 14:00 EDT
 # @@File             :  zz-buildx.sh
-# @@Description      :  
+# @@Description      :
 # @@Changelog        :  New script
 # @@TODO             :  Better documentation
-# @@Other            :  
-# @@Resource         :  
+# @@Other            :
+# @@Resource         :
 # @@Terminal App     :  no
 # @@sudo/root        :  no
 # @@Template         :  other/start-service
@@ -136,8 +136,8 @@ SERVICE_GID="0" # set the group id
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # execute command variables - keep single quotes variables will be expanded later
 EXEC_CMD_BIN='buildx' # command to execute
-EXEC_CMD_ARGS=''                          # command arguments
-EXEC_PRE_SCRIPT=''                        # execute script before
+EXEC_CMD_ARGS=''      # command arguments
+EXEC_PRE_SCRIPT=''    # execute script before
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Is this service a web server
 IS_WEB_SERVER="no"
