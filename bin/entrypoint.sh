@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # shellcheck shell=bash
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-##@Version           :  202407241405-git
+##@Version           :  202407241447-git
 # @@Author           :  Jason Hempstead
 # @@Contact          :  jason@casjaysdev.pro
 # @@License          :  LICENSE.md
 # @@ReadME           :  entrypoint.sh --help
 # @@Copyright        :  Copyright: (c) 2024 Jason Hempstead, Casjays Developments
-# @@Created          :  Wednesday, Jul 24, 2024 14:05 EDT
+# @@Created          :  Wednesday, Jul 24, 2024 14:47 EDT
 # @@File             :  entrypoint.sh
 # @@Description      :  Entrypoint file for docker
 # @@Changelog        :  New script
@@ -492,14 +492,17 @@ start)
     elif [ -f "/usr/local/etc/docker/init.d/$1" ]; then
       eval "/usr/local/etc/docker/init.d/$1" &
       __no_exit
+
     fi
   fi
   ;;
 # Execute primary command
 *)
-  if [ $# -eq 0 ] && [ ! -f "/run/init.d/entrypoint.pid" ]; then
-    echo "$$" >"/run/init.d/entrypoint.pid"
-    __start_init_scripts "/usr/local/etc/docker/init.d"
+  if [ $# -eq 0 ]; then
+    if [ ! -f "/run/init.d/entrypoint.pid" ]; then
+      echo "$$" >"/run/init.d/entrypoint.pid"
+      __start_init_scripts "/usr/local/etc/docker/init.d"
+    fi
     __no_exit
   else
     __exec_command "$@"
