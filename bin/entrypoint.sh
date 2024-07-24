@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # shellcheck shell=bash
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-##@Version           :  202407241227-git
+##@Version           :  202407241405-git
 # @@Author           :  Jason Hempstead
 # @@Contact          :  jason@casjaysdev.pro
 # @@License          :  LICENSE.md
 # @@ReadME           :  entrypoint.sh --help
 # @@Copyright        :  Copyright: (c) 2024 Jason Hempstead, Casjays Developments
-# @@Created          :  Wednesday, Jul 24, 2024 12:27 EDT
+# @@Created          :  Wednesday, Jul 24, 2024 14:05 EDT
 # @@File             :  entrypoint.sh
 # @@Description      :  Entrypoint file for docker
 # @@Changelog        :  New script
@@ -58,9 +58,6 @@ for set_env in "/root/env.sh" "/usr/local/etc/docker/env"/*.sh "/config/env"/*.s
   [ -f "$set_env" ] && . "$set_env"
 done
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Custom functions
-
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Define script variables
 RUNAS_USER=""    # Default is root
 SERVICE_UID=""   # set the user id
@@ -81,7 +78,7 @@ DATABASE_DIR="" # set database dir
 # Healthcheck variables
 HEALTH_ENABLED="yes"                               # enable healthcheck [yes/no]
 SERVICES_LIST="tini,dockerd,docker-registry,nginx" # comma seperated list of processes for the healthcheck
-HEALTH_ENDPOINTS="http://localhost/health"         # url endpoints: [http://localhost/health,http://localhost/test]
+HEALTH_ENDPOINTS=""                                # url endpoints: [http://localhost/health,http://localhost/test]
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Update path var
 export PATH="${PATH:-}"
@@ -99,11 +96,13 @@ __run_message() {
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Startup variables
 export INIT_DATE="${INIT_DATE:-$(date)}"
+export CONTAINER_INIT="${CONTAINER_INIT:-no}"
 export START_SERVICES="${START_SERVICES:-yes}"
 export ENTRYPOINT_MESSAGE="${ENTRYPOINT_MESSAGE:-yes}"
 export ENTRYPOINT_FIRST_RUN="${ENTRYPOINT_FIRST_RUN:-yes}"
 export DATA_DIR_INITIALIZED="${DATA_DIR_INITIALIZED:-no}"
 export CONFIG_DIR_INITIALIZED="${CONFIG_DIR_INITIALIZED:-no}"
+export CONTAINER_NAME="${ENV_CONTAINER_NAME:-$CONTAINER_NAME}"
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # System
 export LANG="${LANG:-C.UTF-8}"
@@ -346,12 +345,14 @@ __run_message
 START_SERVICES="${START_SERVICES:-SYSTEM_INIT}"
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Start all services if no pidfile
-if [ "$START_SERVICES" = "yes" ]; then
+if [ "$START_SERVICES" = "yes" ] && [ "$1" != "backup" ] && [ "$1" != "healthcheck" ]; then
   [ "$1" = "start" ] && shift 1
   [ "$1" = "all" ] && shift 1
+  [ "$1" = "init" ] && export CONTAINER_INIT="yes"
   echo "$$" >"/run/init.d/entrypoint.pid"
   __start_init_scripts "/usr/local/etc/docker/init.d"
   START_SERVICES="no"
+  CONTAINER_INIT="no"
 fi
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Begin options
@@ -409,12 +410,18 @@ healthcheck)
   done
   for port in $ports; do
     if [ -n "$(type -P netstat)" ] && [ -n "$port" ]; then
-      netstat -taupln | grep -q ":$port " || healthStatus=$((healthStatus + 1))
+      if ! netstat -taupln | grep -q ":$port "; then
+        echo "$port isn't open" >&2
+        healthStatus=$((healthStatus + 1))
+      fi
     fi
   done
   for endpoint in $healthEndPoints; do
     if [ -n "$endpoint" ]; then
-      __curl "$endpoint" || healthStatus=$((healthStatus + 1))
+      if ! __curl "$endpoint"; then
+        echo "Can not connect to $endpoint" >&2
+        healthStatus=$((healthStatus + 1))
+      fi
     fi
   done
   [ "$healthStatus" -eq 0 ] || healthMessage="Errors reported see: docker logs --follow $CONTAINER_NAME"
