@@ -121,7 +121,7 @@ user_name="${NGINX_USER_NAME:-}"      # normal user name
 user_pass="${NGINX_USER_PASS_WORD:-}" # normal user password
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # port which service is listening on
-SERVICE_PORT=""
+SERVICE_PORT="80"
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # User to use to launch service - IE: postgres
 RUNAS_USER="root" # normally root

@@ -103,8 +103,8 @@ auth:
 ################
 health:
   storagedriver:
-    enabled: true
-    interval: 10s
+    enabled: false
+    interval: 30s
     threshold: 3
   file:
     - file: REPLACE_CONF_DIR/config.yml
@@ -130,8 +130,8 @@ health:
 ################
 compatibility:
   schema1:
-    # signingkeyfile: REPLACE_CONF_DIR/key.json
     enabled: true
+    #signingkeyfile: REPLACE_CONF_DIR/key.json
 ################
 # validation:
 #   manifests:
