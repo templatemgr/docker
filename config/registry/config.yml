@@ -10,13 +10,13 @@ storage:
   cache:
     blobdescriptor: inmemory
   filesystem:
-    rootdirectory: /data/registry
+    rootdirectory: REPLACE_DATA_DIR
 ################
 http:
-  addr: :5000
+  addr: :REPLACE_REGISTRY_PORT
   #prefix: /my/nested/registry/
   #host: http://myregistryaddress.org:5000
-  #secret: asecretforlocaldevelopment
+  secret: REPLACE_REGISTRY_SECRET
   relativeurls: true
   #draintimeout: 60s
   # tls:
@@ -107,7 +107,7 @@ health:
     interval: 10s
     threshold: 3
   file:
-    - file: /config/registry/config.yml
+    - file: REPLACE_CONF_DIR/config.yml
       interval: 60s
   # http:
   #   - uri: http://server.to.check/must/return/200
@@ -130,7 +130,7 @@ health:
 ################
 compatibility:
   schema1:
-    # signingkeyfile: /config/registry/key.json
+    # signingkeyfile: REPLACE_CONF_DIR/key.json
     enabled: true
 ################
 # validation:

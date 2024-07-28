@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # shellcheck shell=bash
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-##@Version           :  202407191742-git
+##@Version           :  202407281556-git
 # @@Author           :  Jason Hempstead
 # @@Contact          :  jason@casjaysdev.pro
 # @@License          :  LICENSE.md
 # @@ReadME           :  09-registry.sh --help
 # @@Copyright        :  Copyright: (c) 2024 Jason Hempstead, Casjays Developments
-# @@Created          :  Friday, Jul 19, 2024 17:42 EDT
+# @@Created          :  Sunday, Jul 28, 2024 15:56 EDT
 # @@File             :  09-registry.sh
 # @@Description      :
 # @@Changelog        :  New script
@@ -35,7 +35,7 @@ trap 'retVal=$?;[ "$SERVICE_IS_RUNNING" != "yes" ] && [ -f "$SERVICE_PID_FILE" ]
 export PATH="/usr/local/etc/docker/bin:/usr/local/bin:/usr/bin:/usr/sbin:/bin:/sbin"
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 SCRIPT_FILE="$0"
-SERVICE_NAME="registry"
+SERVICE_NAME="docker-registry"
 SCRIPT_NAME="$(basename "$SCRIPT_FILE" 2>/dev/null)"
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # exit if __start_init_scripts function hasn't been Initialized
@@ -89,7 +89,7 @@ PRE_EXEC_MESSAGE=""
 # Set the database root dir
 DATABASE_BASE_DIR="${DATABASE_BASE_DIR:-/data/db}"
 # set the database directory
-DATABASE_DIR="${DATABASE_DIR_REGISTRY:-/data/db/sqlite}"
+DATABASE_DIR="${DATABASE_DIR_DOCKER_REGISTRY:-/data/db/sqlite}"
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Set webroot
 WWW_ROOT_DIR="/usr/share/httpd/default"
@@ -113,12 +113,12 @@ ROOT_FILE_PREFIX="/config/secure/auth/root" # directory to save username/passwor
 USER_FILE_PREFIX="/config/secure/auth/user" # directory to save username/password for normal user
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # root/admin user info password/random]
-root_user_name="${REGISTRY_ROOT_USER_NAME:-}" # root user name
-root_user_pass="${REGISTRY_ROOT_PASS_WORD:-}" # root user password
+root_user_name="${DOCKER_REGISTRY_ROOT_USER_NAME:-}" # root user name
+root_user_pass="${DOCKER_REGISTRY_ROOT_PASS_WORD:-}" # root user password
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Normal user info [password/random]
-user_name="${REGISTRY_USER_NAME:-}"      # normal user name
-user_pass="${REGISTRY_USER_PASS_WORD:-}" # normal user password
+user_name="${DOCKER_REGISTRY_USER_NAME:-}"      # normal user name
+user_pass="${DOCKER_REGISTRY_USER_PASS_WORD:-}" # normal user password
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # port which service is listening on
 SERVICE_PORT="5000"
@@ -127,17 +127,17 @@ SERVICE_PORT="5000"
 RUNAS_USER="root" # normally root
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # User and group in which the service switches to - IE: nginx,apache,mysql,postgres
-SERVICE_USER="registry"  # execute command as another user
-SERVICE_GROUP="registry" # Set the service group
+SERVICE_USER="root"  # execute command as another user
+SERVICE_GROUP="root" # Set the service group
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Set user and group ID
 SERVICE_UID="0" # set the user id
 SERVICE_GID="0" # set the group id
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # execute command variables - keep single quotes variables will be expanded later
-EXEC_CMD_BIN='docker-registry'                    # command to execute
-EXEC_CMD_ARGS='serve /config/registry/config.yml' # command arguments
-EXEC_PRE_SCRIPT=''                                # execute script before
+EXEC_CMD_BIN='docker-registry'             # command to execute
+EXEC_CMD_ARGS='serve $CONF_DIR/config.yml' # command arguments
+EXEC_PRE_SCRIPT=''                         # execute script before
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Is this service a web server
 IS_WEB_SERVER="no"
@@ -172,10 +172,12 @@ ADDITIONAL_CONFIG_DIRS=""
 CMD_ENV=""
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Overwrite based on file/directory
-
+[ -f "$CONF_DIR/.secret" ] && export REGISTRY_HTTP_SECRET="$(<"$CONF_DIR/.secret")"
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Per Application Variables or imports
-
+VAR_DIR="/var/lib/registry"
+export REGISTRY_STORAGE_DELETE_ENABLED="true"
+export REGISTRY_HTTP_SECRET="${REGISTRY_HTTP_SECRET:-$(__random_password)}"
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Custom prerun functions - IE setup WWW_ROOT_DIR
 
@@ -210,18 +212,21 @@ __update_conf_files() {
   [ -d "/usr/local/etc/docker/exec" ] || mkdir -p "/usr/local/etc/docker/exec"
 
   # replace variables
-  # __replace "" "" "$CONF_DIR/registry.conf"
+  __replace "REPLACE_CONF_DIR" "$CONF_DIR" "$CONF_DIR/config.yml"
+  __replace "REPLACE_DATA_DIR" "$DATA_DIR" "$CONF_DIR/config.yml"
+  __replace "REPLACE_REGISTRY_PORT" "$SERVICE_PORT" "$CONF_DIR/config.yml"
+  __replace "REPLACE_REGISTRY_SECRET" "$REGISTRY_HTTP_SECRET" "$CONF_DIR/config.yml"
   # replace variables recursively
   #  __find_replace "" "" "$CONF_DIR"
 
   # custom commands
-  [ -e "/var/lib/docker-registry" ] && rm -Rf "/var/lib/docker-registry"
-  [ -L "/var/lib/docker-registry" ] || ln -sf "/data/registry" "/var/lib/docker-registry"
-  [ -d "/docker/registry/v2/repositories" ] || mkdir -p "/docker/registry/v2/repositories"
-  [ -f "/config/registry/config.yml" ] && [ -d "/etc/docker-registry" ] && cp -Rf "/config/registry/config.yml" "/etc/docker-registry/config.yml"
+  [ -e "$VAR_DIR" ] && rm -Rf "$VAR_DIR"
+  [ -L "$VAR_DIR" ] || ln -sf "$DATA_DIR" "$VAR_DIR"
+  [ -d "$DATA_DIR/v2/repositories" ] || mkdir -p "$DATA_DIR/v2/repositories"
+  [ -f "$CONF_DIR/config.yml" ] && [ -d "$ETC_DIR" ] && cp -Rf "$CONF_DIR/config.yml" "$ETC_DIR/config.yml"
 
   # define actions
-
+  [ -n "$REGISTRY_HTTP_SECRET" ] && echo "$REGISTRY_HTTP_SECRET" >"$CONF_DIR/.secret"
   # exit function
   return $exitCode
 }
@@ -234,8 +239,7 @@ __pre_execute() {
   # define commands
 
   # execute if directories is empty
-  #__is_dir_empty "" && true || false
-
+  __is_dir_empty "" && true
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   # create user if needed
   __create_service_user "$SERVICE_USER" "$SERVICE_GROUP" "${WORK_DIR:-/home/$SERVICE_USER}" "${SERVICE_UID:-}" "${SERVICE_GID:-}"
@@ -245,12 +249,6 @@ __pre_execute() {
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   # Set permissions
   __fix_permissions "$SERVICE_USER" "$SERVICE_GROUP"
-  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  # Create directories
-  __setup_directories
-  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  # Run Custom command
-
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   # Copy /config to /etc
   for config_2_etc in $CONF_DIR $ADDITIONAL_CONFIG_DIRS; do
@@ -320,14 +318,14 @@ __create_service_env() {
   cat <<EOF | tee -p "/config/env/${SERVICE_NAME:-$SCRIPT_NAME}.sh" &>/dev/null
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # root/admin user info [password/random]
-#ENV_ROOT_USER_NAME="${ENV_ROOT_USER_NAME:-$REGISTRY_ROOT_USER_NAME}"   # root user name
-#ENV_ROOT_USER_PASS="${ENV_ROOT_USER_NAME:-$REGISTRY_ROOT_PASS_WORD}"   # root user password
+#ENV_ROOT_USER_NAME="${ENV_ROOT_USER_NAME:-$DOCKER_REGISTRY_ROOT_USER_NAME}"   # root user name
+#ENV_ROOT_USER_PASS="${ENV_ROOT_USER_NAME:-$DOCKER_REGISTRY_ROOT_PASS_WORD}"   # root user password
 #root_user_name="${ENV_ROOT_USER_NAME:-$root_user_name}"                              #
 #root_user_pass="${ENV_ROOT_USER_PASS:-$root_user_pass}"                              #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #Normal user info [password/random]
-#ENV_USER_NAME="${ENV_USER_NAME:-$REGISTRY_USER_NAME}"                  #
-#ENV_USER_PASS="${ENV_USER_PASS:-$REGISTRY_USER_PASS_WORD}"             #
+#ENV_USER_NAME="${ENV_USER_NAME:-$DOCKER_REGISTRY_USER_NAME}"                  #
+#ENV_USER_PASS="${ENV_USER_PASS:-$DOCKER_REGISTRY_USER_PASS_WORD}"             #
 #user_name="${ENV_USER_NAME:-$user_name}"                                             # normal user name
 #user_pass="${ENV_USER_PASS:-$user_pass}"                                             # normal user password
 
@@ -351,7 +349,7 @@ __run_start_script() {
   local sysname="${SERVER_NAME:-${FULL_DOMAIN_NAME:-$HOSTNAME}}" # set hostname
   [ -f "$CONF_DIR/$SERVICE_NAME.exec_cmd.sh" ] && . "$CONF_DIR/$SERVICE_NAME.exec_cmd.sh"
   #
-  __run_pre_execute_checks "/data/logs/entrypoint.log" "$LOG_DIR/init.txt" || return 20
+  __run_pre_execute_checks 2>/dev/stderr | tee -a -p "/data/logs/entrypoint.log" "$LOG_DIR/init.txt" >/dev/null || return 20
   #
   if [ -z "$cmd" ]; then
     __post_execute 2>"/dev/stderr" | tee -p -a "$LOG_DIR/init.txt" >/dev/null
@@ -404,8 +402,8 @@ __run_start_script() {
         execute_command="$(__trim "$su_exec $env_command $cmd_exec")"
         if [ ! -f "$START_SCRIPT" ]; then
           cat <<EOF >"$START_SCRIPT"
-#!/usr/bin/env sh
-trap 'exitCode=\$?; [ \$retVal -ne 0 ] && [ -f "\$SERVICE_PID_FILE" ] && rm -Rf "\$SERVICE_PID_FILE";exit \$exitCode' ERR
+#!/usr/bin/env bash
+trap 'exitCode=\$?;[ \$exitCode -ne 0 ] && [ -f "\$SERVICE_PID_FILE" ] && rm -Rf "\$SERVICE_PID_FILE";exit \$exitCode' EXIT
 #
 set -Eeo pipefail
 # Setting up $cmd to run as ${SERVICE_USER:-root} with env
@@ -414,9 +412,10 @@ cmd="$cmd"
 SERVICE_PID_FILE="$SERVICE_PID_FILE"
 $execute_command 2>"/dev/stderr" >>"$LOG_DIR/$SERVICE_NAME.log" &
 execPid=\$!
-sleep 5
-[ -n "\$execPid"  ] && echo \$execPid >"\$SERVICE_PID_FILE"
-ps ax | awk '{print \$1}' | grep -v grep | grep \$execPid$ && retVal=0
+sleep 10
+[ -n "\$execPid"  ] && echo "\$execPid" >"\$SERVICE_PID_FILE"
+ps ax | awk '{print \$1}' | grep -v grep | grep "\$execPid$" && retVal=0
+[ "\$retVal" = 0 ] && echo "\$cmd has been started" || echo "\$cmd has failed to start - args: \$args" >&2
 exit \$retVal
 
 EOF
@@ -425,8 +424,8 @@ EOF
         if [ ! -f "$START_SCRIPT" ]; then
           execute_command="$(__trim "$su_exec $cmd_exec")"
           cat <<EOF >"$START_SCRIPT"
-#!/usr/bin/env sh
-trap 'exitCode=\$?; [ \$retVal -ne 0 ] && [ -f "\$SERVICE_PID_FILE" ] && rm -Rf "\$SERVICE_PID_FILE";exit \$exitCode' ERR
+#!/usr/bin/env bash
+trap 'exitCode=\$?;[ \$exitCode -ne 0 ] && [ -f "\$SERVICE_PID_FILE" ] && rm -Rf "\$SERVICE_PID_FILE";exit \$exitCode' EXIT
 #
 set -Eeo pipefail
 # Setting up $cmd to run as ${SERVICE_USER:-root}
@@ -435,9 +434,10 @@ cmd="$cmd"
 SERVICE_PID_FILE="$SERVICE_PID_FILE"
 $execute_command 2>>"/dev/stderr" >>"$LOG_DIR/$SERVICE_NAME.log" &
 execPid=\$!
-sleep 5
+sleep 10
 [ -n "\$execPid"  ] && echo \$execPid >"\$SERVICE_PID_FILE"
 ps ax | awk '{print \$1}' | grep -v grep | grep \$execPid$ && retVal=0
+[ "\$retVal" = 0 ] && echo "\$cmd has been started" || echo "\$cmd has failed to start - args: \$args" >&2
 exit \$retVal
 
 EOF
@@ -445,7 +445,7 @@ EOF
       fi
     fi
     [ -x "$START_SCRIPT" ] || chmod 755 -Rf "$START_SCRIPT"
-    eval sh -c "$START_SCRIPT"
+    [ "$CONTAINER_INIT" = "yes" ] || eval sh -c "$START_SCRIPT"
     runExitCode=$?
     return $runExitCode
   fi

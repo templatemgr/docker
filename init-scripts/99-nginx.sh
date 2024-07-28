@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # shellcheck shell=bash
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-##@Version           :  202407191744-git
+##@Version           :  202407281557-git
 # @@Author           :  Jason Hempstead
 # @@Contact          :  jason@casjaysdev.pro
 # @@License          :  LICENSE.md
-# @@ReadME           :  zz-nginx.sh --help
+# @@ReadME           :  99-nginx.sh --help
 # @@Copyright        :  Copyright: (c) 2024 Jason Hempstead, Casjays Developments
-# @@Created          :  Friday, Jul 19, 2024 17:44 EDT
-# @@File             :  zz-nginx.sh
+# @@Created          :  Sunday, Jul 28, 2024 15:57 EDT
+# @@File             :  99-nginx.sh
 # @@Description      :
 # @@Changelog        :  New script
 # @@TODO             :  Better documentation
@@ -121,7 +121,7 @@ user_name="${NGINX_USER_NAME:-}"      # normal user name
 user_pass="${NGINX_USER_PASS_WORD:-}" # normal user password
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # port which service is listening on
-SERVICE_PORT="80"
+SERVICE_PORT=""
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # User to use to launch service - IE: postgres
 RUNAS_USER="root" # normally root
@@ -230,8 +230,7 @@ __pre_execute() {
   # define commands
 
   # execute if directories is empty
-  #__is_dir_empty "" && true || false
-
+  __is_dir_empty "" && true
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   # create user if needed
   __create_service_user "$SERVICE_USER" "$SERVICE_GROUP" "${WORK_DIR:-/home/$SERVICE_USER}" "${SERVICE_UID:-}" "${SERVICE_GID:-}"
@@ -241,12 +240,6 @@ __pre_execute() {
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   # Set permissions
   __fix_permissions "$SERVICE_USER" "$SERVICE_GROUP"
-  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  # Create directories
-  __setup_directories
-  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  # Run Custom command
-
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   # Copy /config to /etc
   for config_2_etc in $CONF_DIR $ADDITIONAL_CONFIG_DIRS; do
@@ -266,11 +259,9 @@ __pre_execute() {
 # function to run after executing
 __post_execute() {
   local waitTime=60                                               # how long to wait before executing
-  local dateformat="'%y-%m-%d"                                    # set date format
   local postMessageST="Running post commands for $SERVICE_NAME"   # message to show at start
   local postMessageEnd="Finished post commands for $SERVICE_NAME" # message to show at completion
   local sysname="${SERVER_NAME:-${FULL_DOMAIN_NAME:-$HOSTNAME}}"  # set hostname
-  local BUILDX_BUILD_INTERVAL="${BUILDX_BUILD_INTERVAL:-3600}"    # how long to wait before rebuilding
 
   # execute commands
   (
@@ -280,23 +271,7 @@ __post_execute() {
     __banner "$postMessageST"
     # commands to execute
     {
-      while :; do
-        local date="$(date +"$dateformat")"
-        docker_files="$(find /data/build -name 'Dockerfile*' | sort -uV 2>/dev/null || grep -v '^$' | grep '^' || false)"
-        if [ -n "$docker_files" ]; then
-          for file in $docker_files; do
-            (
-              printf '# # # Building %s is Starting on %s\n' "$file" "$(date)"
-              buildx --raw "$file"
-              printf '# # # Building %s has completed on %s with exit %s\n\n' "$file" "$(date)" "$?"
-              sleep $BUILDX_BUILD_INTERVAL
-            ) | tee -a -p "$LOG_DIR/buildx-$date.log"
-          done
-        else
-          echo "There are no Dockerfiles in /data/build"
-          sleep 60
-        fi
-      done
+      true
     }
     # set exitCode
     retVal=$?
@@ -365,7 +340,7 @@ __run_start_script() {
   local sysname="${SERVER_NAME:-${FULL_DOMAIN_NAME:-$HOSTNAME}}" # set hostname
   [ -f "$CONF_DIR/$SERVICE_NAME.exec_cmd.sh" ] && . "$CONF_DIR/$SERVICE_NAME.exec_cmd.sh"
   #
-  __run_pre_execute_checks "/data/logs/entrypoint.log" "$LOG_DIR/init.txt" || return 20
+  __run_pre_execute_checks 2>/dev/stderr | tee -a -p "/data/logs/entrypoint.log" "$LOG_DIR/init.txt" >/dev/null || return 20
   #
   if [ -z "$cmd" ]; then
     __post_execute 2>"/dev/stderr" | tee -p -a "$LOG_DIR/init.txt" >/dev/null
@@ -418,8 +393,8 @@ __run_start_script() {
         execute_command="$(__trim "$su_exec $env_command $cmd_exec")"
         if [ ! -f "$START_SCRIPT" ]; then
           cat <<EOF >"$START_SCRIPT"
-#!/usr/bin/env sh
-trap 'exitCode=\$?; [ \$retVal -ne 0 ] && [ -f "\$SERVICE_PID_FILE" ] && rm -Rf "\$SERVICE_PID_FILE";exit \$exitCode' ERR
+#!/usr/bin/env bash
+trap 'exitCode=\$?;[ \$exitCode -ne 0 ] && [ -f "\$SERVICE_PID_FILE" ] && rm -Rf "\$SERVICE_PID_FILE";exit \$exitCode' EXIT
 #
 set -Eeo pipefail
 # Setting up $cmd to run as ${SERVICE_USER:-root} with env
@@ -428,9 +403,10 @@ cmd="$cmd"
 SERVICE_PID_FILE="$SERVICE_PID_FILE"
 $execute_command 2>"/dev/stderr" >>"$LOG_DIR/$SERVICE_NAME.log" &
 execPid=\$!
-sleep 5
-[ -n "\$execPid"  ] && echo \$execPid >"\$SERVICE_PID_FILE"
-ps ax | awk '{print \$1}' | grep -v grep | grep \$execPid$ && retVal=0
+sleep 10
+[ -n "\$execPid"  ] && echo "\$execPid" >"\$SERVICE_PID_FILE"
+ps ax | awk '{print \$1}' | grep -v grep | grep "\$execPid$" && retVal=0
+[ "\$retVal" = 0 ] && echo "\$cmd has been started" || echo "\$cmd has failed to start - args: \$args" >&2
 exit \$retVal
 
 EOF
@@ -439,8 +415,8 @@ EOF
         if [ ! -f "$START_SCRIPT" ]; then
           execute_command="$(__trim "$su_exec $cmd_exec")"
           cat <<EOF >"$START_SCRIPT"
-#!/usr/bin/env sh
-trap 'exitCode=\$?; [ \$retVal -ne 0 ] && [ -f "\$SERVICE_PID_FILE" ] && rm -Rf "\$SERVICE_PID_FILE";exit \$exitCode' ERR
+#!/usr/bin/env bash
+trap 'exitCode=\$?;[ \$exitCode -ne 0 ] && [ -f "\$SERVICE_PID_FILE" ] && rm -Rf "\$SERVICE_PID_FILE";exit \$exitCode' EXIT
 #
 set -Eeo pipefail
 # Setting up $cmd to run as ${SERVICE_USER:-root}
@@ -449,9 +425,10 @@ cmd="$cmd"
 SERVICE_PID_FILE="$SERVICE_PID_FILE"
 $execute_command 2>>"/dev/stderr" >>"$LOG_DIR/$SERVICE_NAME.log" &
 execPid=\$!
-sleep 5
+sleep 10
 [ -n "\$execPid"  ] && echo \$execPid >"\$SERVICE_PID_FILE"
 ps ax | awk '{print \$1}' | grep -v grep | grep \$execPid$ && retVal=0
+[ "\$retVal" = 0 ] && echo "\$cmd has been started" || echo "\$cmd has failed to start - args: \$args" >&2
 exit \$retVal
 
 EOF
@@ -459,7 +436,7 @@ EOF
       fi
     fi
     [ -x "$START_SCRIPT" ] || chmod 755 -Rf "$START_SCRIPT"
-    eval sh -c "$START_SCRIPT"
+    [ "$CONTAINER_INIT" = "yes" ] || eval sh -c "$START_SCRIPT"
     runExitCode=$?
     return $runExitCode
   fi
