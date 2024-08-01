@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # shellcheck shell=bash
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-##@Version           :  202407281557-git
+##@Version           :  202408011359-git
 # @@Author           :  Jason Hempstead
 # @@Contact          :  jason@casjaysdev.pro
 # @@License          :  LICENSE.md
 # @@ReadME           :  99-nginx.sh --help
 # @@Copyright        :  Copyright: (c) 2024 Jason Hempstead, Casjays Developments
-# @@Created          :  Sunday, Jul 28, 2024 15:57 EDT
+# @@Created          :  Thursday, Aug 01, 2024 13:59 EDT
 # @@File             :  99-nginx.sh
 # @@Description      :
 # @@Changelog        :  New script
@@ -57,23 +57,6 @@ done
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 printf '%s\n' "# - - - Initializing $SERVICE_NAME - - - #"
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Run any pre-execution checks
-__run_pre_execute_checks() {
-  # Set variables
-  local exitStatus=0
-
-  # Put command to execute in parentheses
-  {
-    true
-  } && exitStatus=0 || exitStatus=5
-  if [ $exitStatus -ne 0 ]; then
-    echo "The pre-execution check has failed" >&2
-    [ -f "$SERVICE_PID_FILE" ] && rm -Rf "$SERVICE_PID_FILE"
-    exit 1
-  fi
-  return $exitStatus
-}
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Custom functions
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -83,11 +66,9 @@ START_SCRIPT="/usr/local/etc/docker/exec/$SERVICE_NAME"
 # Reset environment before executing service
 RESET_ENV="yes"
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Show message before execute
-PRE_EXEC_MESSAGE=""
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Set the database root dir
 DATABASE_BASE_DIR="${DATABASE_BASE_DIR:-/data/db}"
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # set the database directory
 DATABASE_DIR="${DATABASE_DIR_NGINX:-/data/db/sqlite}"
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -101,24 +82,15 @@ CONF_DIR="/config/nginx" # set config directory
 # set the containers etc directory
 ETC_DIR="/etc/nginx"
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-TMP_DIR="/tmp/nginx"
+# set the var dir
+VAR_DIR=""
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+TMP_DIR="/tmp/nginx"       # set the temp dir
 RUN_DIR="/run/nginx"       # set scripts pid dir
 LOG_DIR="/data/logs/nginx" # set log directory
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Set the working dir
-WORK_DIR="" # set working directory
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Where to save passwords to
-ROOT_FILE_PREFIX="/config/secure/auth/root" # directory to save username/password for root user
-USER_FILE_PREFIX="/config/secure/auth/user" # directory to save username/password for normal user
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# root/admin user info password/random]
-root_user_name="${NGINX_ROOT_USER_NAME:-}" # root user name
-root_user_pass="${NGINX_ROOT_PASS_WORD:-}" # root user password
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Normal user info [password/random]
-user_name="${NGINX_USER_NAME:-}"      # normal user name
-user_pass="${NGINX_USER_PASS_WORD:-}" # normal user password
+WORK_DIR=""
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # port which service is listening on
 SERVICE_PORT="80"
@@ -145,8 +117,26 @@ IS_WEB_SERVER="no"
 # Is this service a database server
 IS_DATABASE_SERVICE="no"
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Does this service use a database server
+USES_DATABASE_SERVICE="no"
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Show message before execute
+PRE_EXEC_MESSAGE=""
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Update path var
-PATH="./bin:$PATH"
+PATH="$PATH:."
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Where to save passwords to
+ROOT_FILE_PREFIX="/config/secure/auth/root" # directory to save username/password for root user
+USER_FILE_PREFIX="/config/secure/auth/user" # directory to save username/password for normal user
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# root/admin user info password/random]
+root_user_name="${NGINX_ROOT_USER_NAME:-}" # root user name
+root_user_pass="${NGINX_ROOT_PASS_WORD:-}" # root user password
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Normal user info [password/random]
+user_name="${NGINX_USER_NAME:-}"      # normal user name
+user_pass="${NGINX_USER_PASS_WORD:-}" # normal user password
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Load variables from config
 [ -f "/config/env/nginx.script.sh" ] && . "/config/env/nginx.script.sh" # Generated by my dockermgr script
@@ -178,44 +168,60 @@ CMD_ENV=""
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Custom prerun functions - IE setup WWW_ROOT_DIR
+__execute_prerun() {
+  true
+}
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Run any pre-execution checks
+__run_pre_execute_checks() {
+  # Set variables
+  local exitStatus=0
+  local pre_execute_checks_MessageST="Running preexecute check for $SERVICE_NAME"   # message to show at start
+  local pre_execute_checks_MessageEnd="Finished preexecute check for $SERVICE_NAME" # message to show at completion
+  __banner "$pre_execute_checks_MessageST"
+  # Put command to execute in parentheses
+  {
+    true
+  }
+  exitStatus=$?
+  __banner "$pre_execute_checks_MessageEnd: Status $exitStatus"
 
+  # show exit message
+  if [ $exitStatus -ne 0 ]; then
+    echo "The pre-execution check has failed" >&2
+    [ -f "$SERVICE_PID_FILE" ] && rm -Rf "$SERVICE_PID_FILE"
+    exit 1
+  fi
+  return $exitStatus
+}
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # use this function to update config files - IE: change port
 __update_conf_files() {
   local exitCode=0                                               # default exit code
   local sysname="${SERVER_NAME:-${FULL_DOMAIN_NAME:-$HOSTNAME}}" # set hostname
-
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   # CD into temp to bybass any permission errors
   cd /tmp || false # lets keep shellcheck happy by adding false
-
-  # delete files
-  #__rm ""
-
-  # execute if directory is empty
-  #__is_dir_empty "" && true || false
-
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   # Create base directories
   __setup_directories
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  # Initialize templates
-  if [ ! -d "$CONF_DIR" ] || __is_dir_empty "$CONF_DIR"; then
-    if [ -d "$ETC_DIR" ]; then
-      mkdir -p "$CONF_DIR"
-      __copy_templates "$ETC_DIR/." "$CONF_DIR/"
-    else
-      __copy_templates "$ETC_DIR" "$CONF_DIR"
-    fi
-  fi
-  [ -d "/usr/local/etc/docker/exec" ] || mkdir -p "/usr/local/etc/docker/exec"
+  # delete files
+  #__rm ""
 
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  # custom commands
+
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  # Initialize templates
+  __init_config_etc
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   # replace variables
   # __replace "" "" "$CONF_DIR/nginx.conf"
   # replace variables recursively
   #  __find_replace "" "" "$CONF_DIR"
 
-  # custom commands
-
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   # define actions
 
   # exit function
@@ -243,7 +249,7 @@ __pre_execute() {
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   # Copy /config to /etc
   for config_2_etc in $CONF_DIR $ADDITIONAL_CONFIG_DIRS; do
-    __initialize_system_etc "$config_2_etc" |& tee -p -a "$LOG_DIR/init.txt" &>/dev/null
+    __initialize_system_etc "$config_2_etc" 2>/dev/stderr | tee -p -a "$LOG_DIR/init.txt"
   done
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   # Replace variables
@@ -252,42 +258,47 @@ __pre_execute() {
   # unset unneeded variables
   unset filesperms filename config_2_etc change_user change_user ADDITIONAL_CONFIG_DIRS application_files filedirs
   # Lets wait a few seconds before continuing
-  sleep 10
+  sleep 5
   return $exitCode
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # function to run after executing
 __post_execute() {
+  local pid=""                                                    # init pid var
+  local retVal=0                                                  # set default exit code
   local waitTime=60                                               # how long to wait before executing
   local postMessageST="Running post commands for $SERVICE_NAME"   # message to show at start
   local postMessageEnd="Finished post commands for $SERVICE_NAME" # message to show at completion
   local sysname="${SERVER_NAME:-${FULL_DOMAIN_NAME:-$HOSTNAME}}"  # set hostname
 
+  # wait
+  sleep $waitTime
   # execute commands
   (
-    # wait
-    sleep $waitTime
     # show message
     __banner "$postMessageST"
     # commands to execute
-    {
-      true
-    }
-    # set exitCode
-    retVal=$?
+    true
     # show exit message
     __banner "$postMessageEnd: Status $retVal"
-  ) 2>"/dev/stderr" | tee -p -a "$LOG_DIR/init.txt" >/dev/null &
-  return
+  ) 2>"/dev/stderr" | tee -p -a "$LOG_DIR/init.txt" &
+  pid=$!
+  # set exitCode
+  ps ax | awk '{print $1}' | grep -v grep | grep -q "$execPid$" && retVal=0 || retVal=10
+  return $retVal
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # use this function to update config files - IE: change port
 __pre_message() {
   local exitCode=0
-  [ -n "$user_name" ] && echo "username:               $user_name" && echo "$user_name" >"${USER_FILE_PREFIX}/${SERVICE_NAME}_name"
-  [ -n "$user_pass" ] && __printf_space "40" "password:" "saved to ${USER_FILE_PREFIX}/${SERVICE_NAME}_pass" && echo "$user_pass" >"${USER_FILE_PREFIX}/${SERVICE_NAME}_pass"
-  [ -n "$root_user_name" ] && echo "root username:     $root_user_name" && echo "$root_user_name" >"${ROOT_FILE_PREFIX}/${SERVICE_NAME}_name"
-  [ -n "$root_user_pass" ] && __printf_space "40" "root password:" "saved to ${ROOT_FILE_PREFIX}/${SERVICE_NAME}_pass" && echo "$root_user_pass" >"${ROOT_FILE_PREFIX}/${SERVICE_NAME}_pass"
+  if [ -n "$user_name" ] || [ -n "$user_pass" ] || [ -n "$root_user_name" ] || [ -n "$root_user_pass" ]; then
+    __banner "User info"
+    [ -n "$user_name" ] && __printf_space "40" "username:" "$user_name" && echo "$user_name" >"${USER_FILE_PREFIX}/${SERVICE_NAME}_name"
+    [ -n "$user_pass" ] && __printf_space "40" "password:" "saved to ${USER_FILE_PREFIX}/${SERVICE_NAME}_pass" && echo "$user_pass" >"${USER_FILE_PREFIX}/${SERVICE_NAME}_pass"
+    [ -n "$root_user_name" ] && __printf_space "40" "root username:" "$root_user_name" && echo "$root_user_name" >"${ROOT_FILE_PREFIX}/${SERVICE_NAME}_name"
+    [ -n "$root_user_pass" ] && __printf_space "40" "root password:" "saved to ${ROOT_FILE_PREFIX}/${SERVICE_NAME}_pass" && echo "$root_user_pass" >"${ROOT_FILE_PREFIX}/${SERVICE_NAME}_pass"
+    __banner ""
+  fi
   [ -n "$PRE_EXEC_MESSAGE" ] && eval echo "$PRE_EXEC_MESSAGE"
   # execute commands
 
@@ -340,10 +351,10 @@ __run_start_script() {
   local sysname="${SERVER_NAME:-${FULL_DOMAIN_NAME:-$HOSTNAME}}" # set hostname
   [ -f "$CONF_DIR/$SERVICE_NAME.exec_cmd.sh" ] && . "$CONF_DIR/$SERVICE_NAME.exec_cmd.sh"
   #
-  __run_pre_execute_checks 2>/dev/stderr | tee -a -p "/data/logs/entrypoint.log" "$LOG_DIR/init.txt" >/dev/null || return 20
+  __run_pre_execute_checks 2>/dev/stderr | tee -a -p "/data/logs/entrypoint.log" "$LOG_DIR/init.txt" || return 20
   #
   if [ -z "$cmd" ]; then
-    __post_execute 2>"/dev/stderr" | tee -p -a "$LOG_DIR/init.txt" >/dev/null
+    __post_execute 2>"/dev/stderr" | tee -p -a "$LOG_DIR/init.txt"
     retVal=$?
     echo "Initializing $SCRIPT_NAME has completed"
     exit $retVal
@@ -353,24 +364,11 @@ __run_start_script() {
       echo "$name is not a valid executable"
       return 2
     fi
-    # set working directories
-    [ -z "$home" ] && home="${workdir:-/tmp/docker}"
-    [ "$home" = "/root" ] && home="/tmp/docker"
-    [ "$home" = "$workdir" ] && workdir=""
-    # create needed directories
-    [ -n "$home" ] && { [ -d "$home" ] || { mkdir -p "$home" && chown -Rf $SERVICE_USER:$SERVICE_GROUP "$home"; }; }
-    [ -n "$workdir" ] && { [ -d "$workdir" ] || { mkdir -p "$workdir" && chown -Rf $SERVICE_USER:$SERVICE_GROUP "$workdir"; }; }
-
-    [ "$user" != "root " ] && [ -d "$home" ] && chmod -f 777 "$home"
-    [ "$user" != "root " ] && [ -d "$workdir" ] && chmod -f 777 "$workdir"
     # check and exit if already running
     if __proc_check "$name" || __proc_check "$cmd"; then
       echo "$name is already running" >&2
       return 0
     else
-      # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-      # cd to dir
-      __cd "${workdir:-$home}"
       # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       # show message if env exists
       if [ -n "$cmd" ]; then
@@ -387,7 +385,7 @@ __run_start_script() {
       [ -n "$su_exec" ] && echo "using $su_exec" | tee -a -p "$LOG_DIR/init.txt"
       echo "$message" | tee -a -p "$LOG_DIR/init.txt"
       su_cmd touch "$SERVICE_PID_FILE"
-      __post_execute 2>"/dev/stderr" | tee -p -a "$LOG_DIR/init.txt" >/dev/null &
+      __post_execute 2>"/dev/stderr" | tee -p -a "$LOG_DIR/init.txt" &
       if [ "$RESET_ENV" = "yes" ]; then
         env_command="$(echo "env -i HOME=\"$home\" LC_CTYPE=\"$lc_type\" PATH=\"$path\" HOSTNAME=\"$sysname\" USER=\"${SERVICE_USER:-$RUNAS_USER}\" $extra_env")"
         execute_command="$(__trim "$su_exec $env_command $cmd_exec")"
@@ -405,7 +403,7 @@ $execute_command 2>"/dev/stderr" >>"$LOG_DIR/$SERVICE_NAME.log" &
 execPid=\$!
 sleep 10
 [ -n "\$execPid"  ] && echo "\$execPid" >"\$SERVICE_PID_FILE"
-ps ax | awk '{print \$1}' | grep -v grep | grep "\$execPid$" && retVal=0
+ps ax | awk '{print \$1}' | grep -v grep | grep -q "\$execPid$" && retVal=0
 [ "\$retVal" = 0 ] && echo "\$cmd has been started" || echo "\$cmd has failed to start - args: \$args" >&2
 exit \$retVal
 
@@ -427,7 +425,7 @@ $execute_command 2>>"/dev/stderr" >>"$LOG_DIR/$SERVICE_NAME.log" &
 execPid=\$!
 sleep 10
 [ -n "\$execPid"  ] && echo \$execPid >"\$SERVICE_PID_FILE"
-ps ax | awk '{print \$1}' | grep -v grep | grep \$execPid$ && retVal=0
+ps ax | awk '{print \$1}' | grep -v grep | grep grep -q \$execPid$ && retVal=0
 [ "\$retVal" = 0 ] && echo "\$cmd has been started" || echo "\$cmd has failed to start - args: \$args" >&2
 exit \$retVal
 
@@ -450,7 +448,7 @@ __run_secure_function() {
         chmod -Rf 600 "$filesperms"
         chown -Rf $SERVICE_USER:$SERVICE_USER "$filesperms"
       fi
-    done |& tee -p -a "$LOG_DIR/init.txt" &>/dev/null
+    done 2>/dev/null | tee -p -a "$LOG_DIR/init.txt"
   fi
   if [ -n "$root_user_name" ] || [ -n "$root_user_pass" ]; then
     for filesperms in "${ROOT_FILE_PREFIX}"/*; do
@@ -458,28 +456,7 @@ __run_secure_function() {
         chmod -Rf 600 "$filesperms"
         chown -Rf $SERVICE_USER:$SERVICE_USER "$filesperms"
       fi
-    done |& tee -p -a "$LOG_DIR/init.txt" &>/dev/null
-  fi
-}
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# simple cd function
-__cd() { mkdir -p "$1" && builtin cd "$1" || exit 1; }
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# process check functions
-__pcheck() { [ -n "$(type -P pgrep 2>/dev/null)" ] && pgrep -x "$1" &>/dev/null && return 0 || return 10; }
-__pgrep() { __pcheck "${1:-$EXEC_CMD_BIN}" || __ps aux 2>/dev/null | grep -Fw " ${1:-$EXEC_CMD_BIN}" | grep -qv ' grep' | grep '^' && return 0 || return 10; }
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# check if process is already running
-__proc_check() {
-  cmd_bin="$(type -P "${1:-$EXEC_CMD_BIN}")"
-  cmd_name="$(basename "${cmd_bin:-$EXEC_CMD_NAME}")"
-  if __pgrep "$cmd_bin" || __pgrep "$cmd_name"; then
-    SERVICE_IS_RUNNING="yes"
-    touch "$SERVICE_PID_FILE"
-    echo "$cmd_name is already running"
-    return 0
-  else
-    return 1
+    done 2>/dev/null | tee -p -a "$LOG_DIR/init.txt"
   fi
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -494,6 +471,9 @@ SERVICE_PID_NUMBER="$(__pgrep)"                                            # che
 EXEC_CMD_BIN="$(type -P "$EXEC_CMD_BIN" || echo "$EXEC_CMD_BIN")"          # set full path
 EXEC_PRE_SCRIPT="$(type -P "$EXEC_PRE_SCRIPT" || echo "$EXEC_PRE_SCRIPT")" # set full path
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Only run check
+__check_service "$1"
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # create auth directories
 [ -n "$USER_FILE_PREFIX" ] && { [ -d "$USER_FILE_PREFIX" ] || mkdir -p "$USER_FILE_PREFIX"; }
 [ -n "$ROOT_FILE_PREFIX" ] && { [ -d "$ROOT_FILE_PREFIX" ] || mkdir -p "$ROOT_FILE_PREFIX"; }
@@ -504,7 +484,7 @@ EXEC_PRE_SCRIPT="$(type -P "$EXEC_PRE_SCRIPT" || echo "$EXEC_PRE_SCRIPT")" # set
 [ -n "$SERVICE_GROUP" ] || SERVICE_GROUP="${RUNAS_USER:-root}"
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Database env
-if [ "$IS_DATABASE_SERVICE" = "yes" ]; then
+if [ "$IS_DATABASE_SERVICE" = "yes" ] || [ "$USES_DATABASE_SERVICE" = "yes" ]; then
   RESET_ENV="no"
   DATABASE_CREATE="${ENV_DATABASE_CREATE:-$DATABASE_CREATE}"
   DATABASE_USER="${ENV_DATABASE_USER:-${DATABASE_USER:-$user_name}}"
@@ -534,47 +514,19 @@ root_user_pass="$(eval echo "${ENV_ROOT_USER_PASS:-$root_user_pass}")"
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 [ -f "/config/env/${SERVICE_NAME:-$SCRIPT_NAME}.sh" ] && . "/config/env/${SERVICE_NAME:-$SCRIPT_NAME}.sh"
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-__initialize_db_users
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Only run check
-if [ "$1" = "check" ]; then
-  shift $#
-  __proc_check "$EXEC_CMD_NAME" || __proc_check "$EXEC_CMD_BIN"
-  exit $?
-fi
+__execute_prerun
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # set switch user command
-if [ "$RUNAS_USER" = "root" ]; then
-  su_cmd() {
-    su_exec=""
-    eval "$@" || return 1
-  }
-elif [ "$(builtin type -P gosu)" ]; then
-  su_exec="gosu $RUNAS_USER"
-  su_cmd() { gosu $RUNAS_USER "$@" || return 1; }
-elif [ "$(builtin type -P runuser)" ]; then
-  su_exec="runuser -u $RUNAS_USER"
-  su_cmd() { runuser -u $RUNAS_USER "$@" || return 1; }
-elif [ "$(builtin type -P sudo)" ]; then
-  su_exec="sudo -u $RUNAS_USER"
-  su_cmd() { sudo -u $RUNAS_USER "$@" || return 1; }
-elif [ "$(builtin type -P su)" ]; then
-  su_exec="su -s /bin/sh - $RUNAS_USER"
-  su_cmd() { su -s /bin/sh - $RUNAS_USER -c "$@" || return 1; }
-else
-  su_cmd() {
-    su_exec=""
-    echo "Can not switch to $RUNAS_USER: attempting to run as root" && eval "$@" || return 1
-  }
-fi
+__switch_to_user
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Change to working directory
-[ -n "$WORK_DIR" ] && [ -n "$EXEC_CMD_BIN" ] && [ "$PWD" != "$WORK_DIR" ] && __cd "$WORK_DIR" && echo "Changed to $PWD"
-[ -z "$WORK_DIR" ] && [ "$HOME" = "/root" ] && [ "$RUNAS_USER" != "root" ] && [ "$PWD" != "/tmp" ] && __cd "/tmp" && echo "Changed to $PWD"
-[ -z "$WORK_DIR" ] && [ "$HOME" = "/root" ] && [ "$SERVICE_USER" != "root" ] && [ "$PWD" != "/tmp" ] && __cd "/tmp" && echo "Changed to $PWD" && WORK_DIR="" || WORK_DIR="${WORK_DIR:-$PWD}"
+# Initialize the home/working dir
+__init_working_dir
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # show init message
 __pre_message
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#
+__initialize_db_users
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Initialize ssl
 __update_ssl_conf
@@ -590,7 +542,7 @@ __run_secure_function
 # run the pre execute commands
 __pre_execute
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-__run_start_script 2>>/dev/stderr | tee -p -a "/data/logs/entrypoint.log" >/dev/null && errorCode=0 || errorCode=10
+__run_start_script 2>>/dev/stderr | tee -p -a "/data/logs/entrypoint.log" && errorCode=0 || errorCode=10
 if [ -n "$EXEC_CMD_BIN" ]; then
   if [ "$errorCode" -ne 0 ]; then
     echo "Failed to execute: ${cmd_exec:-$EXEC_CMD_BIN $EXEC_CMD_ARGS}" | tee -p -a "/data/logs/entrypoint.log" "$LOG_DIR/init.txt"
